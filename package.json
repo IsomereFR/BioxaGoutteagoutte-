@@ -1,0 +1,9 @@
+{
+  "name": "goutte-a-goutte",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jeu Goutte à Goutte (Bioxa) avec classement partagé via Upstash Redis, déployé sur Vercel.",
+  "engines": {
+    "node": ">=18"
+  }
+}

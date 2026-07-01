@@ -11,6 +11,10 @@ const REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 const KEY = 'bioxa_goutte_lb_v1';          // top 10 des scores (JSON)
 const TOTAL_KEY = 'bioxa_goutte_total_v1'; // total de gouttes collectées, tous joueurs
 
+// Gouttes déjà attrapées avant la mise en place du compteur partagé.
+// Ajoutées comme point de départ (309 + 71 + 44 + 37 = 461).
+const SEED_DROPS = 309 + 71 + 44 + 37;
+
 // Envoie une commande Redis via l'API REST d'Upstash.
 async function redis(command) {
   const res = await fetch(REST_URL, {
@@ -41,7 +45,7 @@ module.exports = async (req, res) => {
       const rawTotal = await redis(['GET', TOTAL_KEY]);
       res.status(200).json({
         board: rawList ? JSON.parse(rawList) : [],
-        total: parseInt(rawTotal, 10) || 0,
+        total: SEED_DROPS + (parseInt(rawTotal, 10) || 0),
       });
       return;
     }
@@ -67,7 +71,7 @@ module.exports = async (req, res) => {
       // 1 goutte = 1 point : on ajoute le score de la partie au total global.
       const total = await redis(['INCRBY', TOTAL_KEY, score]);
 
-      res.status(200).json({ board: list, total: parseInt(total, 10) || 0 });
+      res.status(200).json({ board: list, total: SEED_DROPS + (parseInt(total, 10) || 0) });
       return;
     }
 

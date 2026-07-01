@@ -8,7 +8,8 @@
 
 const REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
-const KEY = 'bioxa_goutte_lb_v1';
+const KEY = 'bioxa_goutte_lb_v1';          // top 10 des scores (JSON)
+const TOTAL_KEY = 'bioxa_goutte_total_v1'; // total de gouttes collectées, tous joueurs
 
 // Envoie une commande Redis via l'API REST d'Upstash.
 async function redis(command) {
@@ -26,22 +27,26 @@ async function redis(command) {
 }
 
 module.exports = async (req, res) => {
-  // Si les clés Upstash ne sont pas configurées, on renvoie une liste vide
+  // Si les clés Upstash ne sont pas configurées, on renvoie un état vide
   // au lieu de planter (le jeu reste jouable).
   if (!REST_URL || !REST_TOKEN) {
-    res.status(200).json([]);
+    res.status(200).json({ board: [], total: 0 });
     return;
   }
 
   try {
-    // GET : lire le classement
+    // GET : lire le classement + le total de sang collecté
     if (req.method === 'GET') {
-      const raw = await redis(['GET', KEY]);
-      res.status(200).json(raw ? JSON.parse(raw) : []);
+      const rawList = await redis(['GET', KEY]);
+      const rawTotal = await redis(['GET', TOTAL_KEY]);
+      res.status(200).json({
+        board: rawList ? JSON.parse(rawList) : [],
+        total: parseInt(rawTotal, 10) || 0,
+      });
       return;
     }
 
-    // POST : ajouter un score puis renvoyer le top 10 mis à jour
+    // POST : ajouter un score, incrémenter le total, renvoyer l'état à jour
     if (req.method === 'POST') {
       let body = req.body;
       if (typeof body === 'string') body = JSON.parse(body || '{}');
@@ -59,13 +64,16 @@ module.exports = async (req, res) => {
       list = list.slice(0, 10);
 
       await redis(['SET', KEY, JSON.stringify(list)]);
-      res.status(200).json(list);
+      // 1 goutte = 1 point : on ajoute le score de la partie au total global.
+      const total = await redis(['INCRBY', TOTAL_KEY, score]);
+
+      res.status(200).json({ board: list, total: parseInt(total, 10) || 0 });
       return;
     }
 
     res.status(405).json({ error: 'Méthode non autorisée' });
   } catch (e) {
-    // En cas d'erreur réseau/base, on renvoie une liste vide pour ne pas casser le jeu.
-    res.status(200).json([]);
+    // En cas d'erreur réseau/base, on renvoie un état vide pour ne pas casser le jeu.
+    res.status(200).json({ board: [], total: 0 });
   }
 };

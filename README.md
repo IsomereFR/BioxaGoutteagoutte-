@@ -15,7 +15,12 @@ entre tous les joueurs**.
 1. Le navigateur affiche `index.html` (le jeu).
 2. Quand un joueur termine une partie, le jeu appelle l'adresse `/api/leaderboard`.
 3. Ce petit programme (`api/leaderboard.js`) enregistre le score dans Upstash
-   et renvoie le **top 10** commun à tout le monde.
+   et renvoie le **top 10** commun à tout le monde, ainsi que le **total de sang
+   collecté** par l'ensemble des joueurs.
+
+Le classement est **consultable à tout moment** depuis le menu (bouton
+« VOIR LE CLASSEMENT »). L'écran du classement affiche aussi le sang total
+collecté : **1 goutte = 1 point = 50 µL**, converti en litres.
 
 ---
 

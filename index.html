@@ -86,7 +86,7 @@ function miniArrows(cx,cy){ r(cx-4,cy-1,8,2,C.blueL); r(cx-5,cy-2,1,4,C.blueL); 
 let state='TITLE', items=[], parts=[], floats=[];
 let score=0, lives=3, level=1, tubeX=W/2, tubeMouthY=H-94;
 let spawnT=0, shake=0, flash=0, wideTimer=0, x2Timer=0;
-let board=[], lastScore=0, lastName='';
+let board=[], lastScore=0, lastName='', totalDrops=0;
 
 function resetGame(){ items=[];parts=[];floats=[];score=0;lives=3;level=1;tubeX=W/2;
   spawnT=0;shake=0;flash=0;wideTimer=0;x2Timer=0;state='PLAY'; }
@@ -108,14 +108,26 @@ function applyBonus(sub,x,y){
 }
 
 // ---- entrées ----
+const BOARD_BTN={x:W/2-100,y:400,w:200,h:24}; // bouton "CLASSEMENT" du menu
 function pointerX(e){ const rect=cv.getBoundingClientRect();
   const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
   return Math.max(0,Math.min(W, cx/rect.width*W)); }
+function pointerY(e){ const rect=cv.getBoundingClientRect();
+  const cy=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+  return Math.max(0,Math.min(H, cy/rect.height*H)); }
 function onMove(e){ if(state==='PLAY'){ tubeX=pointerX(e); e.preventDefault(); } }
 cv.addEventListener('pointermove',onMove,{passive:false});
 cv.addEventListener('touchmove',onMove,{passive:false});
+function openBoard(){ state='BOARD'; lbLoad().then(d=>{ if(d){ board=d.board||board; totalDrops=d.total||totalDrops; } }); }
+function inBtn(x,y,b){ return x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h; }
+// clic clavier (espace/entrée) : pas de coordonnées → comportement par défaut
 function tap(){ if(state==='TITLE')resetGame(); else if(state==='BOARD')state='TITLE'; }
-cv.addEventListener('pointerdown',(e)=>{ if(state==='PLAY')tubeX=pointerX(e); tap(); });
+// clic/toucher avec coordonnées : sur le TITRE, le bouton ouvre le classement
+function tapAt(x,y){
+  if(state==='TITLE'){ if(inBtn(x,y,BOARD_BTN)) openBoard(); else resetGame(); }
+  else if(state==='BOARD'){ state='TITLE'; }
+}
+cv.addEventListener('pointerdown',(e)=>{ if(state==='PLAY')tubeX=pointerX(e); tapAt(pointerX(e),pointerY(e)); });
 const keys={}; addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' '||e.key==='Enter')tap();});
 addEventListener('keyup',e=>{keys[e.key]=false;});
 
@@ -210,8 +222,12 @@ function renderTitle(){
   drawBonus(lx+9,286,'x2');    text('BONUS',lx+30,286,11,C.gold,'left');
   text('Doigt · souris · flèches ←  →',W/2,330,10,C.blueL);
   if(Math.floor(performance.now()/500)%2===0) text('▶  TAPE POUR JOUER',W/2,378,15,C.greenL);
-  text('Termine une partie pour entrer',W/2,430,9,C.cream);
-  text('au classement',W/2,446,9,C.cream);
+  // bouton "voir le classement" (accessible à tout moment)
+  r(BOARD_BTN.x,BOARD_BTN.y,BOARD_BTN.w,BOARD_BTN.h,C.band);
+  r(BOARD_BTN.x,BOARD_BTN.y,BOARD_BTN.w,2,C.blue);
+  r(BOARD_BTN.x,BOARD_BTN.y+BOARD_BTN.h-2,BOARD_BTN.w,2,C.shadow);
+  text('VOIR LE CLASSEMENT',W/2,BOARD_BTN.y+BOARD_BTN.h/2,12,C.blueL);
+  text('classement partagé · tous les joueurs',W/2,442,8,C.cream);
 }
 function renderBoard(){
   drawLogo(W/2,8,30); text('MEILLEURS SCORES',W/2,62,16,C.green);
@@ -220,32 +236,43 @@ function renderBoard(){
     text((i+1)+'.',30,y,14,hot?C.greenL:C.cream,'left');
     text(e.name,64,y,14,hot?C.greenL:C.cream,'left');
     text(String(e.score),W-30,y,14,hot?C.greenL:C.blueL,'right'); });
-  if(Math.floor(performance.now()/500)%2===0) text('TAPE POUR REJOUER',W/2,H-40,12,C.cream);
+  // sang total collecté par tous les joueurs (1 goutte = 1 point = 50 µL)
+  const litres=totalDrops*0.00005;
+  const lStr=litres>=1?litres.toFixed(2):litres.toFixed(3);
+  text('SANG COLLECTÉ · TOUS JOUEURS',W/2,422,9,C.redH);
+  text(lStr+' L',W/2,444,17,C.cream);
+  text('('+totalDrops.toLocaleString('fr-FR')+' gouttes × 50 µL)',W/2,462,8,C.blueL);
+  if(Math.floor(performance.now()/500)%2===0) text('TAPE POUR REJOUER',W/2,H-22,11,C.cream);
 }
 
 // ============== SAISIE + LEADERBOARD ==============
 const entry=document.getElementById('entry'),nameIn=document.getElementById('nameIn'),okBtn=document.getElementById('okBtn');
 function showEntry(){ document.querySelector('#entry h2').textContent='Score : '+lastScore+' 🩸'; entry.style.display='flex'; nameIn.focus(); nameIn.select(); }
-async function submitScore(){ lastName=(nameIn.value||'BIO').toUpperCase().slice(0,8); entry.style.display='none'; board=await lbSave(lastName,lastScore); state='BOARD'; }
+async function submitScore(){ lastName=(nameIn.value||'BIO').toUpperCase().slice(0,8); entry.style.display='none'; const d=await lbSave(lastName,lastScore); board=d.board||[]; totalDrops=d.total||totalDrops; state='BOARD'; }
 okBtn.addEventListener('click',submitScore);
 nameIn.addEventListener('keydown',e=>{ if(e.key==='Enter')submitScore(); });
 
 /* LEADERBOARD partagé en ligne (via l'API Vercel + Upstash Redis).
-   Le classement est commun à TOUS les joueurs. */
+   L'API renvoie { board:[...], total:N }. Le classement ET le total de
+   sang collecté sont communs à TOUS les joueurs. */
+function normalizeLB(d){
+  if(Array.isArray(d)) return {board:d,total:0};        // ancien format (tableau)
+  return {board:(d&&d.board)||[], total:(d&&d.total)||0};
+}
 async function lbLoad(){
-  try{ const r=await fetch('/api/leaderboard'); return await r.json(); }
-  catch(e){ return []; }
+  try{ const r=await fetch('/api/leaderboard'); return normalizeLB(await r.json()); }
+  catch(e){ return {board:[],total:0}; }
 }
 async function lbSave(name,score){
   try{
     const r=await fetch('/api/leaderboard',{method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name,score})});
-    return await r.json();
-  }catch(e){ return []; }
+    return normalizeLB(await r.json());
+  }catch(e){ return {board:[],total:0}; }
 }
 
-lbLoad().then(list=>{ if(Array.isArray(list)) board=list; });
+lbLoad().then(d=>{ if(d){ board=d.board||[]; totalDrops=d.total||0; } });
 requestAnimationFrame(loop);
 </script>
 </body>

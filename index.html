@@ -29,6 +29,15 @@
   #okBtn{font-family:inherit;font-weight:bold;letter-spacing:2px;cursor:pointer;font-size:clamp(12px,3vh,17px);
     padding:11px 26px;text-transform:uppercase;background:var(--green);color:#0a1730;border:none;border-radius:4px}
   #okBtn:active{transform:translateY(1px)}
+  #info{position:absolute;inset:0;display:none;flex-direction:column;border-radius:6px;
+    background:rgba(6,16,31,.97);padding:14px 14px 18px;overflow-y:auto;touch-action:pan-y;
+    -webkit-overflow-scrolling:touch;-webkit-user-select:text;user-select:text}
+  #info h2{font-size:15px;color:var(--green);text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:6px}
+  #info h3{font-size:11px;color:var(--blueL);text-transform:uppercase;letter-spacing:1px;margin:10px 0 3px}
+  #info p{font-size:11px;line-height:1.55;opacity:.92;margin-bottom:4px}
+  #info a{color:var(--greenL)}
+  #info .closeBtn{position:sticky;top:0;align-self:flex-end;font-family:inherit;font-weight:bold;
+    cursor:pointer;font-size:14px;line-height:1;padding:4px 10px;background:var(--green);color:#0a1730;border:none;border-radius:4px}
 </style>
 </head>
 <body>
@@ -38,8 +47,30 @@
   <div id="entry">
     <h2>Nouveau score !</h2>
     <p>Tes initiales (3 à 8 lettres)</p>
+    <p style="font-size:clamp(8px,1.8vh,11px);color:#4d7fd6">⚠️ N'utilise pas ton vrai nom — un pseudo suffit.</p>
     <input id="nameIn" maxlength="8" value="BIO" autocomplete="off" spellcheck="false">
     <button id="okBtn">Valider</button>
+  </div>
+  <div id="info">
+    <button class="closeBtn" id="closeInfo">✕ Fermer</button>
+    <h2>Infos &amp; confidentialité</h2>
+    <p>Petit jeu proposé par <b>Bioxa</b> pour patienter. « Quitte à patienter, autant le faire ensemble ! »</p>
+
+    <h3>Données enregistrées</h3>
+    <p>Uniquement le <b>pseudo</b> que vous saisissez (merci de ne pas mettre votre vrai nom), votre <b>score</b> et la <b>semaine</b> de jeu. Ces informations servent à afficher le <b>classement partagé</b> et le total de gouttes collectées, communs à tous les joueurs.</p>
+
+    <h3>Ce que nous ne faisons pas</h3>
+    <p>Aucun cookie, aucun traceur publicitaire, aucune donnée de santé. Le jeu ne demande ni compte, ni e-mail, ni identité.</p>
+
+    <h3>Hébergement &amp; localisation</h3>
+    <p>Le site est mis en ligne via <b>Vercel</b> (fonction exécutée en France) et le classement est stocké chez <b>Upstash</b>, sur une base située en <b>Union européenne</b>. Comme tout site web, votre adresse IP peut apparaître temporairement dans les journaux techniques de ces prestataires.</p>
+
+    <h3>Conservation</h3>
+    <p>Le classement « <b>cette semaine</b> » est effacé automatiquement chaque semaine. Le classement « tous les temps » et le total ne contiennent que des pseudonymes et des scores, sans donnée sensible.</p>
+
+    <h3>Vos droits (RGPD)</h3>
+    <p>Vous pouvez demander l'accès, la rectification ou la <b>suppression</b> d'un pseudo/score à tout moment. Contact du délégué à la protection des données&nbsp;: <a href="mailto:dpo@bioxa.fr">dpo@bioxa.fr</a>.</p>
+    <p style="opacity:.6;font-size:9px;margin-top:8px">Base légale&nbsp;: intérêt légitime (animation de l'espace d'attente).</p>
   </div>
 </div>
 
@@ -112,6 +143,7 @@ const BOARD_BTN={x:W/2-100,y:400,w:200,h:24}; // bouton "CLASSEMENT" du menu
 const TAB_WEEK={x:24,y:52,w:126,h:24};        // onglet "cette semaine"
 const TAB_ALL ={x:150,y:52,w:126,h:24};       // onglet "tous les temps"
 const REPLAY_BTN={x:W/2-70,y:428,w:140,h:30}; // bouton REJOUER (écran classement)
+const INFO_BTN={x:W/2-95,y:474,w:190,h:20};   // lien "infos & confidentialité" (accueil)
 const POCHE_DROPS=9000;                        // 1 poche de sang = 450 mL = 9000 gouttes (×50 µL)
 function pointerX(e){ const rect=cv.getBoundingClientRect();
   const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
@@ -128,7 +160,11 @@ function inBtn(x,y,b){ return x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h; }
 function tap(){ if(state==='TITLE')resetGame(); else if(state==='BOARD')state='TITLE'; }
 // clic/toucher avec coordonnées
 function tapAt(x,y){
-  if(state==='TITLE'){ if(inBtn(x,y,BOARD_BTN)) openBoard(); else resetGame(); }
+  if(state==='TITLE'){
+    if(inBtn(x,y,INFO_BTN)) openInfo();
+    else if(inBtn(x,y,BOARD_BTN)) openBoard();
+    else resetGame();
+  }
   else if(state==='BOARD'){
     if(inBtn(x,y,TAB_WEEK)) boardTab='week';
     else if(inBtn(x,y,TAB_ALL)) boardTab='all';
@@ -251,6 +287,10 @@ function renderTitle(){
   // total de sang collecté par tous les joueurs (idée 2)
   const litT=totalDrops*0.00005, pT=Math.floor(totalDrops/POCHE_DROPS);
   text('ENSEMBLE : '+litT.toFixed(2)+' L  ·  '+pT+' POCHE'+(pT>1?'S':''),W/2,462,9,C.redH);
+  // lien vers le menu Infos & confidentialité (RGPD)
+  const iy=INFO_BTN.y+INFO_BTN.h/2;
+  text('INFOS & CONFIDENTIALITÉ',W/2,iy,8,C.blueL);
+  r(W/2-72,iy+7,144,1,C.grid); // petit soulignement pour signaler un lien
 }
 function renderBoard(){
   drawLogo(W/2,6,26);
@@ -290,6 +330,11 @@ function showEntry(){ document.querySelector('#entry h2').textContent='Score : '
 async function submitScore(){ lastName=(nameIn.value||'BIO').toUpperCase().slice(0,8); entry.style.display='none'; const d=await lbSave(lastName,lastScore); board=d.board||[]; weekBoard=d.week||[]; totalDrops=d.total||totalDrops; boardTab='week'; state='BOARD'; }
 okBtn.addEventListener('click',submitScore);
 nameIn.addEventListener('keydown',e=>{ if(e.key==='Enter')submitScore(); });
+
+// ---- menu "Infos & confidentialité" (panneau HTML séparé) ----
+const infoBox=document.getElementById('info'), closeInfo=document.getElementById('closeInfo');
+function openInfo(){ infoBox.style.display='flex'; infoBox.scrollTop=0; }
+closeInfo.addEventListener('click',()=>{ infoBox.style.display='none'; });
 
 /* LEADERBOARD partagé en ligne (via l'API Vercel + Upstash Redis).
    L'API renvoie { board:[...], total:N }. Le classement ET le total de

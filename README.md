@@ -62,6 +62,18 @@ qui accompagne ce projet, ou ci-dessous en version courte.
 
 ---
 
+## Confidentialité (RGPD)
+
+Le jeu enregistre uniquement un **pseudo** (saisi par le joueur, sans son vrai nom),
+un **score** et la **semaine** de jeu, pour faire fonctionner le classement partagé.
+Il n'y a **aucun cookie**, aucun traceur, aucune donnée de santé.
+
+- Une page **« Infos & confidentialité »** est accessible depuis l'accueil du jeu.
+- Le classement de la semaine est **effacé automatiquement** chaque semaine.
+- Base de classement (**Upstash**) à choisir en **région Union européenne** ;
+  fonction Vercel exécutée en France (voir `vercel.json`, région `cdg1`).
+- Contact DPO affiché dans le jeu : **dpo@bioxa.fr**.
+
 ## Tester en local (facultatif)
 
 Avec l'outil Vercel installé (`npm i -g vercel`) :

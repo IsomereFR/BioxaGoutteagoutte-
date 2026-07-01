@@ -86,7 +86,7 @@ function miniArrows(cx,cy){ r(cx-4,cy-1,8,2,C.blueL); r(cx-5,cy-2,1,4,C.blueL); 
 let state='TITLE', items=[], parts=[], floats=[];
 let score=0, lives=3, level=1, tubeX=W/2, tubeMouthY=H-94;
 let spawnT=0, shake=0, flash=0, wideTimer=0, x2Timer=0;
-let board=[], lastScore=0, lastName='', totalDrops=0;
+let board=[], weekBoard=[], boardTab='all', lastScore=0, lastName='', totalDrops=0;
 
 function resetGame(){ items=[];parts=[];floats=[];score=0;lives=3;level=1;tubeX=W/2;
   spawnT=0;shake=0;flash=0;wideTimer=0;x2Timer=0;state='PLAY'; }
@@ -109,6 +109,10 @@ function applyBonus(sub,x,y){
 
 // ---- entrées ----
 const BOARD_BTN={x:W/2-100,y:400,w:200,h:24}; // bouton "CLASSEMENT" du menu
+const TAB_WEEK={x:24,y:52,w:126,h:24};        // onglet "cette semaine"
+const TAB_ALL ={x:150,y:52,w:126,h:24};       // onglet "tous les temps"
+const REPLAY_BTN={x:W/2-70,y:428,w:140,h:30}; // bouton REJOUER (écran classement)
+const POCHE_DROPS=9000;                        // 1 poche de sang = 450 mL = 9000 gouttes (×50 µL)
 function pointerX(e){ const rect=cv.getBoundingClientRect();
   const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
   return Math.max(0,Math.min(W, cx/rect.width*W)); }
@@ -118,14 +122,19 @@ function pointerY(e){ const rect=cv.getBoundingClientRect();
 function onMove(e){ if(state==='PLAY'){ tubeX=pointerX(e); e.preventDefault(); } }
 cv.addEventListener('pointermove',onMove,{passive:false});
 cv.addEventListener('touchmove',onMove,{passive:false});
-function openBoard(){ state='BOARD'; lbLoad().then(d=>{ if(d){ board=d.board||board; totalDrops=d.total||totalDrops; } }); }
+function openBoard(){ state='BOARD'; lbLoad().then(d=>{ if(d){ board=d.board||board; weekBoard=d.week||weekBoard; totalDrops=d.total||totalDrops; } }); }
 function inBtn(x,y,b){ return x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h; }
 // clic clavier (espace/entrée) : pas de coordonnées → comportement par défaut
 function tap(){ if(state==='TITLE')resetGame(); else if(state==='BOARD')state='TITLE'; }
-// clic/toucher avec coordonnées : sur le TITRE, le bouton ouvre le classement
+// clic/toucher avec coordonnées
 function tapAt(x,y){
   if(state==='TITLE'){ if(inBtn(x,y,BOARD_BTN)) openBoard(); else resetGame(); }
-  else if(state==='BOARD'){ state='TITLE'; }
+  else if(state==='BOARD'){
+    if(inBtn(x,y,TAB_WEEK)) boardTab='week';
+    else if(inBtn(x,y,TAB_ALL)) boardTab='all';
+    else if(inBtn(x,y,REPLAY_BTN)) resetGame();
+    else state='TITLE';
+  }
 }
 cv.addEventListener('pointerdown',(e)=>{ if(state==='PLAY')tubeX=pointerX(e); tapAt(pointerX(e),pointerY(e)); });
 const keys={}; addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' '||e.key==='Enter')tap();});
@@ -212,6 +221,16 @@ function drawTube(cx,topY,w){
   r(x-1,topY-2,w+2,4,C.blueL); r(x-1,topY,w+2,2,C.blue);
   r(x+5,topY+22,2,h-30,C.cream);
 }
+function drawTab(b,label,on){
+  r(b.x,b.y,b.w,b.h,on?C.blue:C.band);
+  r(b.x,b.y,b.w,2,on?C.blueL:C.grid);
+  text(label,b.x+b.w/2,b.y+b.h/2,10,on?C.cream:C.blueL);
+}
+function drawBtn(b,label,bg,fg){
+  r(b.x,b.y+b.h-3,b.w,3,C.shadow);
+  r(b.x,b.y,b.w,b.h,bg); r(b.x,b.y,b.w,2,C.cream);
+  text(label,b.x+b.w/2,b.y+b.h/2,13,fg);
+}
 function renderTitle(){
   drawLogo(W/2,12,128);
   text('GOUTTE À GOUTTE',W/2,176,18,C.cream);
@@ -229,27 +248,46 @@ function renderTitle(){
   r(BOARD_BTN.x,BOARD_BTN.y+BOARD_BTN.h-2,BOARD_BTN.w,2,C.shadow);
   text('VOIR LE CLASSEMENT',W/2,BOARD_BTN.y+BOARD_BTN.h/2,12,C.blueL);
   text('classement partagé · tous les joueurs',W/2,442,8,C.cream);
+  // total de sang collecté par tous les joueurs (idée 2)
+  const litT=totalDrops*0.00005, pT=Math.floor(totalDrops/POCHE_DROPS);
+  text('ENSEMBLE : '+litT.toFixed(2)+' L  ·  '+pT+' POCHE'+(pT>1?'S':''),W/2,462,9,C.redH);
 }
 function renderBoard(){
-  drawLogo(W/2,8,30); text('MEILLEURS SCORES',W/2,62,16,C.green);
-  const rows=board.length?board:[{name:'---',score:0}];
-  rows.slice(0,8).forEach((e,i)=>{ const y=108+i*40, hot=(e.name===lastName&&e.score===lastScore);
-    text((i+1)+'.',30,y,14,hot?C.greenL:C.cream,'left');
-    text(e.name,64,y,14,hot?C.greenL:C.cream,'left');
-    text(String(e.score),W-30,y,14,hot?C.greenL:C.blueL,'right'); });
-  // sang total collecté par tous les joueurs (1 goutte = 1 point = 50 µL)
+  drawLogo(W/2,6,26);
+  // onglets : cette semaine / tous les temps (idée 8)
+  const active=boardTab==='week'?weekBoard:board;
+  drawTab(TAB_WEEK,'CETTE SEMAINE',boardTab==='week');
+  drawTab(TAB_ALL ,'TOUS LES TEMPS',boardTab==='all');
+  // rang atteint après une partie (idée 6)
+  let myRank=-1;
+  if(lastName) myRank=active.findIndex(e=>e.name===lastName&&e.score===lastScore);
+  if(myRank>=0) text('TU ES '+(myRank+1)+(myRank===0?'ER':'E')+' !',W/2,92,13,C.greenL);
+  // lignes du classement
+  const rows=active.length?active:[{name:'---',score:0}];
+  rows.slice(0,8).forEach((e,i)=>{ const y=112+i*29, hot=(e.name===lastName&&e.score===lastScore);
+    text((i+1)+'.',30,y,13,hot?C.greenL:C.cream,'left');
+    text(e.name,58,y,13,hot?C.greenL:C.cream,'left');
+    text(String(e.score),W-30,y,13,hot?C.greenL:C.blueL,'right'); });
+  // sang collecté + poches remplies ensemble (idées 1 & 2)
   const litres=totalDrops*0.00005;
   const lStr=litres>=1?litres.toFixed(2):litres.toFixed(3);
-  text('SANG COLLECTÉ · TOUS JOUEURS',W/2,422,9,C.redH);
-  text(lStr+' L',W/2,444,17,C.cream);
-  text('('+totalDrops.toLocaleString('fr-FR')+' gouttes × 50 µL)',W/2,462,8,C.blueL);
-  if(Math.floor(performance.now()/500)%2===0) text('TAPE POUR REJOUER',W/2,H-22,11,C.cream);
+  const nb=Math.floor(totalDrops/POCHE_DROPS);
+  const inPoche=(totalDrops%POCHE_DROPS)/POCHE_DROPS;
+  text('SANG COLLECTÉ · TOUS JOUEURS',W/2,350,9,C.redH);
+  text(lStr+' L   ·   '+nb+' POCHE'+(nb>1?'S':''),W/2,370,14,C.cream);
+  // jauge vers la prochaine poche (450 mL)
+  const gx=40,gw=W-80,gy=384,gh=8;
+  r(gx-1,gy-1,gw+2,gh+2,C.shadow); r(gx,gy,gw,gh,C.grid); r(gx,gy,Math.round(gw*inPoche),gh,C.red);
+  text('remplies ensemble · prochaine poche : '+Math.round(inPoche*100)+'%',W/2,402,8,C.blueL);
+  // bouton rejouer (idée 6)
+  drawBtn(REPLAY_BTN,'REJOUER',C.green,'#0a1730');
+  if(Math.floor(performance.now()/500)%2===0) text('toucher ailleurs → menu',W/2,H-14,8,C.cream);
 }
 
 // ============== SAISIE + LEADERBOARD ==============
 const entry=document.getElementById('entry'),nameIn=document.getElementById('nameIn'),okBtn=document.getElementById('okBtn');
 function showEntry(){ document.querySelector('#entry h2').textContent='Score : '+lastScore+' 🩸'; entry.style.display='flex'; nameIn.focus(); nameIn.select(); }
-async function submitScore(){ lastName=(nameIn.value||'BIO').toUpperCase().slice(0,8); entry.style.display='none'; const d=await lbSave(lastName,lastScore); board=d.board||[]; totalDrops=d.total||totalDrops; state='BOARD'; }
+async function submitScore(){ lastName=(nameIn.value||'BIO').toUpperCase().slice(0,8); entry.style.display='none'; const d=await lbSave(lastName,lastScore); board=d.board||[]; weekBoard=d.week||[]; totalDrops=d.total||totalDrops; boardTab='week'; state='BOARD'; }
 okBtn.addEventListener('click',submitScore);
 nameIn.addEventListener('keydown',e=>{ if(e.key==='Enter')submitScore(); });
 
@@ -257,8 +295,8 @@ nameIn.addEventListener('keydown',e=>{ if(e.key==='Enter')submitScore(); });
    L'API renvoie { board:[...], total:N }. Le classement ET le total de
    sang collecté sont communs à TOUS les joueurs. */
 function normalizeLB(d){
-  if(Array.isArray(d)) return {board:d,total:0};        // ancien format (tableau)
-  return {board:(d&&d.board)||[], total:(d&&d.total)||0};
+  if(Array.isArray(d)) return {board:d,week:[],total:0};   // ancien format (tableau)
+  return {board:(d&&d.board)||[], week:(d&&d.week)||[], total:(d&&d.total)||0};
 }
 async function lbLoad(){
   try{ const r=await fetch('/api/leaderboard'); return normalizeLB(await r.json()); }
@@ -273,7 +311,7 @@ async function lbSave(name,score){
   }catch(e){ return {board:[],total:0}; }
 }
 
-lbLoad().then(d=>{ if(d){ board=d.board||[]; totalDrops=d.total||0; } });
+lbLoad().then(d=>{ if(d){ board=d.board||[]; weekBoard=d.week||[]; totalDrops=d.total||0; } });
 requestAnimationFrame(loop);
 </script>
 </body>

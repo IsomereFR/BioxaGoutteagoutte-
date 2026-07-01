@@ -19,8 +19,13 @@ entre tous les joueurs**.
    collecté** par l'ensemble des joueurs.
 
 Le classement est **consultable à tout moment** depuis le menu (bouton
-« VOIR LE CLASSEMENT »). L'écran du classement affiche aussi le sang total
-collecté : **1 goutte = 1 point = 50 µL**, converti en litres.
+« VOIR LE CLASSEMENT »), avec deux onglets : **Cette semaine** et **Tous les
+temps** (le classement de la semaine se réinitialise tout seul chaque semaine).
+
+L'écran du classement affiche aussi le sang total collecté par tous les joueurs
+(**1 goutte = 1 point = 50 µL**), converti en litres et en **poches de sang**
+(1 poche = 450 mL), avec une jauge de progression vers la poche suivante. Le
+total apparaît également sur l'écran d'accueil.
 
 ---
 

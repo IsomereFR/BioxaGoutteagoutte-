@@ -73,6 +73,8 @@ Il n'y a **aucun cookie**, aucun traceur, aucune donnée de santé.
 - Base de classement (**Upstash**) à choisir en **région Union européenne** ;
   fonction Vercel exécutée en France (voir `vercel.json`, région `cdg1`).
 - Contact DPO affiché dans le jeu : **dpo@bioxa.fr**.
+- Les pseudos sont **filtrés côté serveur** (grossièretés remplacées par
+  « JOUEUR », caractères limités aux lettres et chiffres).
 
 ## Tester en local (facultatif)
 

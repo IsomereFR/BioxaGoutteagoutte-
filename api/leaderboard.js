@@ -17,6 +17,44 @@ const TOTAL_KEY = 'bioxa_goutte_total_v1'; // total de gouttes collectées, tous
 // Ajoutées comme point de départ (309 + 71 + 44 + 37 = 461).
 const SEED_DROPS = 309 + 71 + 44 + 37;
 
+// ---- Filtre de pseudos (affichés en public : on préfère être strict) ----
+// Mots interdits cherchés À L'INTÉRIEUR du pseudo (après normalisation).
+const BANNED_SUB = [
+  'MERDE', 'PUTAIN', 'PUTIN', 'PUTE', 'SALOP', 'CONNAR', 'CONAR', 'ENCUL', 'NIQUE',
+  'BITE', 'COUILL', 'BATARD', 'CHIER', 'SUCE', 'PEDE', 'PEDAL', 'TAPETTE',
+  'TAFIOL', 'GOUINE', 'NEGRE', 'NEGRO', 'BOUGNOU', 'YOUPIN', 'NAZI', 'HITLER',
+  'PENIS', 'VAGIN', 'SEXE', 'PORN', 'XXX',
+  'FUCK', 'SHIT', 'BITCH', 'CUNT', 'NIGGER', 'NIGGA',
+];
+// Mots interdits seulement s'ils constituent TOUT le pseudo (trop courts pour
+// une recherche interne : "CUL" déclencherait sur "HERCULE").
+const BANNED_EXACT = ['CUL', 'ZOB', 'PD', 'FDP', 'NTM', 'PTN', 'TG', 'KKK', 'SS'];
+
+// Déjoue les contournements du type "PUT1N" ou "M3RDE".
+function unleet(s) {
+  return s
+    .replace(/0/g, 'O').replace(/1/g, 'I').replace(/3/g, 'E')
+    .replace(/4/g, 'A').replace(/5/g, 'S').replace(/7/g, 'T')
+    .replace(/8/g, 'B');
+}
+
+// Nettoie le pseudo : majuscules, accents retirés, lettres/chiffres uniquement,
+// 8 caractères max. Si le résultat est vide ou grossier → "JOUEUR".
+function cleanName(raw) {
+  let name = String(raw || '')
+    .toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // é → E, etc.
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 8);
+  if (!name) return 'JOUEUR';
+  const t = unleet(name);
+  if (BANNED_EXACT.includes(t)) return 'JOUEUR';
+  for (const w of BANNED_SUB) {
+    if (t.includes(w)) return 'JOUEUR';
+  }
+  return name;
+}
+
 // Numéro de semaine ISO (ex. "2026_27"), pour la clé du classement hebdomadaire.
 function isoWeekId(d) {
   const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -88,7 +126,7 @@ module.exports = async (req, res) => {
       if (typeof body === 'string') body = JSON.parse(body || '{}');
       body = body || {};
 
-      const name = String(body.name || '???').toUpperCase().slice(0, 8);
+      const name = cleanName(body.name); // filtre grossièretés + caractères
       let score = parseInt(body.score, 10);
       if (!Number.isFinite(score)) score = 0;
       score = Math.max(0, Math.min(999999, score)); // garde-fou anti-triche basique

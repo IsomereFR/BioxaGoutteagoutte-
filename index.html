@@ -333,8 +333,11 @@ function showEntry(){
   const litres=lastScore*0.00005;
   const lStr=(litres>=1?litres.toFixed(2):litres.toFixed(3)).replace('.',',');
   const mlStr=(lastScore*0.05).toFixed(1).replace('.',',');
-  document.getElementById('volMsg').textContent=
-    'Bravo ! Vous avez collecté l\'équivalent de '+lStr+' L de sang (soit '+mlStr+' mL). '+
+  // total collectif, en comptant la partie qui vient de se terminer
+  const totL=((totalDrops+lastScore)*0.00005).toFixed(2).replace('.',',');
+  document.getElementById('volMsg').innerHTML=
+    'Bravo ! Vous avez collecté l\'équivalent de '+lStr+' L de sang (soit '+mlStr+' mL).<br>'+
+    'Ensemble, tous joueurs confondus : '+totL+' L !<br>'+
     'Le don du sang est primordial, pensez-y !';
   entry.style.display='flex'; nameIn.focus(); nameIn.select();
 }

@@ -46,6 +46,7 @@
   <div id="scan"></div>
   <div id="entry">
     <h2>Nouveau score !</h2>
+    <p id="volMsg" style="color:#86B63A;font-weight:bold"></p>
     <p>Tes initiales (3 à 8 lettres)</p>
     <p style="font-size:clamp(8px,1.8vh,11px);color:#4d7fd6">⚠️ N'utilise pas ton vrai nom — un pseudo suffit.</p>
     <input id="nameIn" maxlength="8" value="BIO" autocomplete="off" spellcheck="false">
@@ -326,7 +327,17 @@ function renderBoard(){
 
 // ============== SAISIE + LEADERBOARD ==============
 const entry=document.getElementById('entry'),nameIn=document.getElementById('nameIn'),okBtn=document.getElementById('okBtn');
-function showEntry(){ document.querySelector('#entry h2').textContent='Score : '+lastScore+' 🩸'; entry.style.display='flex'; nameIn.focus(); nameIn.select(); }
+function showEntry(){
+  document.querySelector('#entry h2').textContent='Score : '+lastScore+' 🩸';
+  // volume collecté cette partie : 1 goutte = 50 µL
+  const litres=lastScore*0.00005;
+  const lStr=(litres>=1?litres.toFixed(2):litres.toFixed(3)).replace('.',',');
+  const mlStr=(lastScore*0.05).toFixed(1).replace('.',',');
+  document.getElementById('volMsg').textContent=
+    'Bravo ! Vous avez collecté l\'équivalent de '+lStr+' L de sang (soit '+mlStr+' mL). '+
+    'Le don du sang est primordial, pensez-y !';
+  entry.style.display='flex'; nameIn.focus(); nameIn.select();
+}
 async function submitScore(){ lastName=(nameIn.value||'BIO').toUpperCase().slice(0,8); entry.style.display='none'; const d=await lbSave(lastName,lastScore); board=d.board||[]; weekBoard=d.week||[]; totalDrops=d.total||totalDrops; boardTab='week'; state='BOARD'; }
 okBtn.addEventListener('click',submitScore);
 nameIn.addEventListener('keydown',e=>{ if(e.key==='Enter')submitScore(); });

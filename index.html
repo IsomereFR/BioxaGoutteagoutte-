@@ -95,8 +95,9 @@ function text(s,x,y,sz,col,al='center'){ ctx.fillStyle=col;ctx.textAlign=al;ctx.
 // ---- sprites ----
 const DROP=['..dd..','.drrd.','drrrrd','drhrrd','drrrrd','.drrd.','..dd..'];
 const DMAP={d:C.redD,r:C.red,h:C.redH}; const DW=6,DH=DROP.length;
-function drawDrop(px,py,s){ for(let j=0;j<DH;j++){const row=DROP[j];
-  for(let i=0;i<DW;i++){const ch=row[i];if(ch==='.')continue;r(px+i*s,py+j*s,s,s,DMAP[ch]);}}}
+const GMAP={d:'#8a6d00',r:C.gold,h:'#ffffff'}; // goutte en OR
+function drawDrop(px,py,s,map){ map=map||DMAP; for(let j=0;j<DH;j++){const row=DROP[j];
+  for(let i=0;i<DW;i++){const ch=row[i];if(ch==='.')continue;r(px+i*s,py+j*s,s,s,map[ch]);}}}
 
 const VIR=['...KK...','.K.BB.K.','..BBBB..','KBBPPBBK','KBBBBBBK','..BBBB..','.K.BB.K.','...KK...'];
 const VMAP={K:C.viroD,B:C.viro,P:C.viroP}; const VW=8;
@@ -118,21 +119,30 @@ function miniArrows(cx,cy){ r(cx-4,cy-1,8,2,C.blueL); r(cx-5,cy-2,1,4,C.blueL); 
 let state='TITLE', items=[], parts=[], floats=[];
 let score=0, lives=3, level=1, tubeX=W/2, tubeMouthY=H-94;
 let spawnT=0, shake=0, flash=0, wideTimer=0, x2Timer=0;
+let combo=0, frenzyTimer=0, goldFlash=0, lvlFxT=0, lvlPrev=3; // effets "waouh"
 let board=[], weekBoard=[], boardTab='all', lastScore=0, lastName='', totalDrops=0;
 
-function resetGame(){ items=[];parts=[];floats=[];score=0;lives=3;level=1;tubeX=W/2;
-  spawnT=0;shake=0;flash=0;wideTimer=0;x2Timer=0;state='PLAY'; }
+function resetGame(){ items=[];parts=[];floats=[];score=0;lives=3;level=3;tubeX=W/2;
+  spawnT=0;shake=0;flash=0;wideTimer=0;x2Timer=0;
+  combo=0;frenzyTimer=0;goldFlash=0;lvlFxT=0;lvlPrev=3;state='PLAY'; }
 
 function spawnItem(){
+  const baseV=60+(level-1)*13;
+  if(frenzyTimer>0){ // PLUIE DE GOUTTES : que du sang, sans pénalité si raté
+    const e={type:'blood',y:-30,resolved:false,free:true,w:18,h:21,vy:baseV*(1.0+Math.random()*0.5)};
+    e.x=10+Math.random()*(W-20-e.w); items.push(e); return;
+  }
   const r1=Math.random(); const virusChance=Math.min(0.30,0.12+(level-1)*0.02);
   let type='blood'; if(r1<virusChance)type='virus'; else if(r1<virusChance+0.09)type='bonus';
-  const baseV=60+(level-1)*13; const e={type,y:-30,resolved:false,missed:false};
+  else if(r1<virusChance+0.09+0.025)type='gold'; // goutte en OR (rare)
+  const e={type,y:-30,resolved:false,missed:false};
   if(type==='blood'){ e.w=18;e.h=21;e.vy=baseV*(0.9+Math.random()*0.35); }
   else if(type==='virus'){ e.w=24;e.h=24;e.vy=baseV*(0.85+Math.random()*0.30); }
+  else if(type==='gold'){ e.w=18;e.h=21;e.vy=baseV*0.8; }
   else { e.w=18;e.h=18;e.vy=baseV*0.78; e.sub=['wide','x2','wide','x2','life'][(Math.random()*5)|0]; }
   e.x=10+Math.random()*(W-20-e.w); items.push(e);
 }
-function burst(x,y,col){ for(let i=0;i<8;i++) parts.push({x,y,vx:(Math.random()-0.5)*120,vy:-Math.random()*120-20,life:0.5,col}); }
+function burst(x,y,col,n){ n=n||8; for(let i=0;i<n;i++) parts.push({x,y,vx:(Math.random()-0.5)*120,vy:-Math.random()*120-20,life:0.5,col}); }
 function applyBonus(sub,x,y){
   if(sub==='life'){ lives=Math.min(5,lives+1); floats.push({x,y:y-6,txt:'+1 VIE',life:.9,col:C.greenL}); }
   else if(sub==='wide'){ wideTimer=6; floats.push({x,y:y-6,txt:'TUBE +',life:.9,col:C.blueL}); }
@@ -188,13 +198,17 @@ function update(dt){
   if(state!=='PLAY') return;
 
   if(wideTimer>0)wideTimer-=dt; if(x2Timer>0)x2Timer-=dt;
+  if(frenzyTimer>0)frenzyTimer-=dt; if(goldFlash>0)goldFlash-=dt*1.6; if(lvlFxT>0)lvlFxT-=dt;
   const half=wideTimer>0?23:15;
   if(keys['ArrowLeft'])  tubeX-=180*dt;
   if(keys['ArrowRight']) tubeX+=180*dt;
   tubeX=Math.max(half,Math.min(W-half,tubeX));
 
-  level=1+Math.floor(score/8);
-  const spawnEvery=Math.max(0.45,1.2-(level-1)*0.06);
+  level=3+Math.floor(score/8); // démarrage direct au niveau 3
+  if(level>lvlPrev){ lvlPrev=level; lvlFxT=1.1; goldFlash=Math.max(goldFlash,.35);
+    for(let k=0;k<5;k++) burst(30+Math.random()*(W-60),80+Math.random()*160,[C.greenL,C.gold,C.blueL][k%3],6); }
+  let spawnEvery=Math.max(0.45,1.2-(level-1)*0.06);
+  if(frenzyTimer>0) spawnEvery=0.16; // PLUIE DE GOUTTES !
   spawnT-=dt; if(spawnT<=0){ spawnItem(); spawnT=spawnEvery; }
 
   const mouthY=tubeMouthY, tw=wideTimer>0?46:30, halfBox=tw/2+2;
@@ -206,13 +220,17 @@ function update(dt){
       e.y < mouthY+22 && e.y+e.h > mouthY-3;
     if(touch){
       e.resolved=true; e.dead=true;
-      if(e.type==='blood'){ const p=x2Timer>0?2:1; score+=p;
-        floats.push({x:cx,y:mouthY-8,txt:'+'+p,life:.7,col:C.greenL}); burst(cx,mouthY,C.redH); }
-      else if(e.type==='virus'){ lives--; shake=11; flash=.85;
+      if(e.type==='blood'){ const p=x2Timer>0?2:1; score+=p; combo++;
+        floats.push({x:cx,y:mouthY-8,txt:'+'+p,life:.7,col:C.greenL}); burst(cx,mouthY,C.redH);
+        if(combo%10===0){ goldFlash=Math.max(goldFlash,.5); shake=Math.max(shake,4);
+          floats.push({x:W/2,y:mouthY-40,txt:'COMBO x'+combo+' !',life:1.1,col:C.gold}); burst(cx,mouthY-10,C.gold,16); } }
+      else if(e.type==='virus'){ lives--; combo=0; shake=11; flash=.85;
         floats.push({x:cx,y:mouthY-8,txt:'-1',life:.8,col:C.redH}); burst(cx,mouthY,C.viro); }
+      else if(e.type==='gold'){ frenzyTimer=4; goldFlash=.8; shake=Math.max(shake,5);
+        floats.push({x:W/2,y:mouthY-40,txt:'PLUIE DE GOUTTES !',life:1.2,col:C.gold}); burst(cx,mouthY,C.gold,20); }
       else { applyBonus(e.sub,cx,mouthY); burst(cx,mouthY,e.sub==='life'?C.greenL:e.sub==='wide'?C.blueL:C.gold); }
     }
-    if(e.y>H){ if(e.type==='blood'&&!e.resolved){ lives--; shake=8; flash=.7; } e.dead=true; }
+    if(e.y>H){ if(e.type==='blood'&&!e.resolved&&!e.free){ lives--; combo=0; shake=8; flash=.7; } e.dead=true; }
   }
   items=items.filter(e=>!e.dead);
   if(lives<=0){ lastScore=score; state='OVER'; showEntry(); }
@@ -227,6 +245,7 @@ function render(){
   parts.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life*2);r(p.x,p.y,2,2,p.col);}); ctx.globalAlpha=1;
   floats.forEach(f=>{ctx.globalAlpha=Math.max(0,f.life);text(f.txt,f.x,f.y,11,f.col||C.greenL);}); ctx.globalAlpha=1;
   if(flash>0){ctx.fillStyle='rgba(193,18,31,'+(flash*0.35)+')';ctx.fillRect(0,0,W,H);}
+  if(goldFlash>0){ctx.fillStyle='rgba(242,194,0,'+(goldFlash*0.28)+')';ctx.fillRect(0,0,W,H);}
   ctx.restore();
 }
 function renderHUD(){
@@ -239,6 +258,8 @@ function renderPlay(){
   for(const e of items){
     if(e.type==='blood')drawDrop(e.x,e.y,3);
     else if(e.type==='virus')drawVirus(e.x,e.y,3);
+    else if(e.type==='gold'){ const pu=.35+.25*Math.sin(performance.now()/90);
+      ctx.globalAlpha=pu; r(e.x-4,e.y-4,e.w+8,e.h+8,C.gold); ctx.globalAlpha=1; drawDrop(e.x,e.y,3,GMAP); }
     else drawBonus(e.x+e.w/2,e.y+e.h/2,e.sub);
   }
   const tw=wideTimer>0?46:30; drawTube(tubeX,tubeMouthY,tw);
@@ -248,6 +269,12 @@ function renderPlay(){
   if(wideTimer>0){ miniArrows(ax,tubeMouthY-12); }
   renderHUD();
   drawLogo(W/2,H-50,38);
+  // ---- effets "waouh" ----
+  if(combo>=5) text('COMBO x'+combo,W/2,56,10,C.gold);
+  if(frenzyTimer>0){ const a=.35+.3*Math.sin(performance.now()/80); // cadre doré qui pulse
+    ctx.globalAlpha=a; r(0,0,W,3,C.gold); r(0,H-3,W,3,C.gold); r(0,0,3,H,C.gold); r(W-3,0,3,H,C.gold); ctx.globalAlpha=1; }
+  if(lvlFxT>0){ const t=1.1-lvlFxT, sz=Math.min(30,14+t*80); // bannière NIVEAU X qui grossit
+    ctx.globalAlpha=Math.min(1,lvlFxT*2); text('NIVEAU '+level,W/2,H/2-60,sz,C.greenL); ctx.globalAlpha=1; }
 }
 function drawTube(cx,topY,w){
   const h=44,x=cx-w/2;
@@ -277,7 +304,8 @@ function renderTitle(){
   drawDrop(lx,206,3);          text('À ATTRAPER',lx+30,216,11,C.cream,'left');
   drawVirus(lx-3,236,3);       text('À ÉVITER  -1 vie',lx+30,248,11,C.redH,'left');
   drawBonus(lx+9,286,'x2');    text('BONUS',lx+30,286,11,C.gold,'left');
-  text('Doigt · souris · flèches ←  →',W/2,330,10,C.blueL);
+  drawDrop(lx,304,2,GMAP);     text('OR = PLUIE DE GOUTTES !',lx+30,311,10,C.gold,'left');
+  text('Doigt · souris · flèches ←  →',W/2,332,10,C.blueL);
   if(Math.floor(performance.now()/500)%2===0) text('▶  TAPE POUR JOUER',W/2,378,15,C.greenL);
   // bouton "voir le classement" (accessible à tout moment)
   r(BOARD_BTN.x,BOARD_BTN.y,BOARD_BTN.w,BOARD_BTN.h,C.band);

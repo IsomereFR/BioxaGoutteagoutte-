@@ -37,7 +37,10 @@ Mécaniques de jeu :
   vraiment les points** (×2 à 8, ×3 à 16, ×4 à 24, ×5 à 32). Une jauge se vide :
   il faut enchaîner pour ne pas le perdre.
 - **Prise parfaite** : attraper une goutte pile au centre du tube rapporte un bonus.
-- **Goutte en or** : déclenche 5 s de **pluie de gouttes** (que du sang, sans pénalité).
+- **Goutte en or** : déclenche 5 s de **pluie de gouttes** (que du sang, sans
+  pénalité). Elle apparaît sur environ 5 % des chutes, et une garantie force son
+  apparition après 14 s sans en voir — sinon beaucoup de parties se terminaient
+  sans que le joueur découvre la mécanique.
 - **Paliers** (25, 50, 100, 200, 400 points) et **record personnel** célébrés à l'écran.
 - **Défi du jour** : une règle spéciale, **la même pour tous**, qui change chaque
   jour (tube fin, chute libre, une seule vie, invasion, ruée vers l'or, précision,

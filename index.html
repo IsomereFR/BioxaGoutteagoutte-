@@ -391,6 +391,7 @@ let state='INTRO', items=[], parts=[], floats=[];
 let score=0, lives=3, level=1, tubeX=W/2, tubeMouthY=H-94;
 let spawnT=0, shake=0, flash=0, wideTimer=0, x2Timer=0;
 let combo=0, comboT=0, comboBest=0, frenzyTimer=0, goldFlash=0, lvlPrev=3; // effets "waouh"
+let goldT=0;   // temps écoulé depuis la dernière goutte dorée
 let dropsCaught=0, levelDrops=0, milestoneIdx=0, punch=0, ripples=[];
 let bannerT=0, bannerTxt='', bannerCol='#fff', recordBeaten=false, newRecordShown=false;
 let board=[], weekBoard=[], dayBoard=[], boardTab='all', lastScore=0, lastDrops=0, lastName='', totalDrops=0;
@@ -433,7 +434,7 @@ function resetGame(daily){
   const lv=(DM&&DM.start)||3;
   items=[];parts=[];floats=[];ripples=[];score=0;lives=(DM&&DM.lives)||3;level=lv;tubeX=W/2;
   spawnT=0;shake=0;flash=0;wideTimer=0;x2Timer=0;
-  combo=0;comboT=0;comboBest=0;frenzyTimer=0;goldFlash=0;lvlPrev=lv;
+  combo=0;comboT=0;comboBest=0;frenzyTimer=0;goldFlash=0;lvlPrev=lv;goldT=0;
   dropsCaught=0;levelDrops=0;milestoneIdx=0;punch=0;bannerT=0;recordBeaten=false;newRecordShown=false;state='PLAY';
   if(DM) banner(DM.nom,C.gold,DM.desc);
 }
@@ -447,10 +448,15 @@ function spawnItem(){
   const r1=Math.random();
   const virusChance=Math.min(0.45,Math.min(0.30,0.12+(level-1)*0.02)*((DM&&DM.virus)||1));
   const bonusChance=(DM&&DM.nobonus)?0:0.09;
-  const goldChance=0.025*((DM&&DM.gold)||1);
-  let type='blood'; if(r1<virusChance)type='virus';
+  const goldChance=0.05*((DM&&DM.gold)||1);
+  // Garantie : au bout de 14 s sans goutte dorée, la prochaine en est une.
+  // Sans cela, beaucoup de parties se terminaient sans jamais en voir passer.
+  let type='blood';
+  if(goldT>14) type='gold';
+  else if(r1<virusChance)type='virus';
   else if(r1<virusChance+bonusChance)type='bonus';
   else if(r1<virusChance+bonusChance+goldChance)type='gold'; // goutte en OR
+  if(type==='gold') goldT=0;
   const e={type,y:-30,resolved:false,missed:false};
   if(type==='blood'){ e.w=18;e.h=21;e.vy=baseV*(0.9+Math.random()*0.35); }
   else if(type==='virus'){ e.w=24;e.h=24;e.vy=baseV*(0.85+Math.random()*0.30); }
@@ -551,6 +557,7 @@ function update(dt){
   if(wideTimer>0)wideTimer-=dt; if(x2Timer>0)x2Timer-=dt;
   if(frenzyTimer>0)frenzyTimer-=dt; if(goldFlash>0)goldFlash-=dt*1.6;
   if(comboT>0){ comboT-=dt; if(comboT<=0)combo=0; } // le combo s'éteint si on traîne
+  if(frenzyTimer<=0) goldT+=dt;                     // on ne compte pas pendant la pluie
   const tf=(DM&&DM.tube)||1;
   const half=(wideTimer>0?23:15)*tf;
   if(keys['ArrowLeft'])  tubeX-=180*dt;

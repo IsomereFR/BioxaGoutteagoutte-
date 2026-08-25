@@ -43,6 +43,11 @@ Mécaniques de jeu :
 > Le score peut être multiplié par les combos, mais le **sang collecté se compte
 > en gouttes réellement attrapées** — le compteur collectif reste donc exact.
 
+**Fin de partie** : après avoir validé son pseudo, le joueur voit une **poche de
+don (450 mL) se remplir** à l'écran jusqu'au niveau atteint collectivement, puis
+sa contribution personnelle en mL. Si la poche se complète, elle est célébrée
+avant qu'une nouvelle commence.
+
 Le classement est **consultable à tout moment** depuis le menu (bouton
 « VOIR LE CLASSEMENT »), avec deux onglets : **Cette semaine** et **Tous les
 temps** (le classement de la semaine se réinitialise tout seul chaque semaine).

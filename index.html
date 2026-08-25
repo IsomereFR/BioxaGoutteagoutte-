@@ -394,6 +394,7 @@ let combo=0, comboT=0, comboBest=0, frenzyTimer=0, goldFlash=0, lvlPrev=3; // ef
 let dropsCaught=0, milestoneIdx=0, punch=0, ripples=[];
 let bannerT=0, bannerTxt='', bannerCol='#fff', recordBeaten=false, newRecordShown=false;
 let board=[], weekBoard=[], boardTab='all', lastScore=0, lastDrops=0, lastName='', totalDrops=0;
+let fillT=0, fillBefore=0, fillAfter=0, bagDone=false; // animation de la poche
 // Record personnel : gardé dans le navigateur du joueur, jamais envoyé au serveur.
 let best=0; try{ best=parseInt(localStorage.getItem('bioxa_best'),10)||0; }catch(e){}
 
@@ -439,11 +440,11 @@ function applyBonus(sub,x,y){
 }
 
 // ---- entrées ----
-const BOARD_BTN={x:W/2-100,y:400,w:200,h:24}; // bouton "CLASSEMENT" du menu
+const BOARD_BTN={x:W/2-102,y:374,w:204,h:27}; // bouton "CLASSEMENT" du menu
 const TAB_WEEK={x:24,y:52,w:126,h:24};        // onglet "cette semaine"
 const TAB_ALL ={x:150,y:52,w:126,h:24};       // onglet "tous les temps"
 const REPLAY_BTN={x:W/2-70,y:428,w:140,h:30}; // bouton REJOUER (écran classement)
-const INFO_BTN={x:W/2-95,y:474,w:190,h:20};   // lien "infos & confidentialité" (accueil)
+const INFO_BTN={x:W/2-95,y:468,w:190,h:22};   // lien "infos & confidentialité" (accueil)
 const POCHE_DROPS=9000;                        // 1 poche de sang = 450 mL = 9000 gouttes (×50 µL)
 function pointerX(e){ const rect=cv.getBoundingClientRect();
   const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
@@ -457,10 +458,11 @@ cv.addEventListener('touchmove',onMove,{passive:false});
 function openBoard(){ state='BOARD'; lbLoad().then(d=>{ if(d){ board=d.board||board; weekBoard=d.week||weekBoard; totalDrops=d.total||totalDrops; } }); }
 function inBtn(x,y,b){ return x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h; }
 // clic clavier (espace/entrée) : pas de coordonnées → comportement par défaut
-function tap(){ if(state==='INTRO'){state='TITLE';return;} if(state==='TITLE')resetGame(); else if(state==='BOARD')state='TITLE'; }
+function tap(){ if(state==='INTRO'){state='TITLE';return;} if(state==='FILL'){ if(fillT>0.8)state='BOARD'; return; } if(state==='TITLE')resetGame(); else if(state==='BOARD')state='TITLE'; }
 // clic/toucher avec coordonnées
 function tapAt(x,y){
   if(state==='INTRO'){ state='TITLE'; return; }
+  if(state==='FILL'){ if(fillT>0.8) state='BOARD'; return; }
   if(state==='TITLE'){
     if(inBtn(x,y,INFO_BTN)) openInfo();
     else if(inBtn(x,y,BOARD_BTN)) openBoard();
@@ -487,6 +489,12 @@ function update(dt){
   parts.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=320*dt;p.life-=dt;}); parts=parts.filter(p=>p.life>0);
   floats.forEach(f=>{f.y-=24*dt;f.life-=dt;}); floats=floats.filter(f=>f.life>0);
   ripples.forEach(o=>{o.r+=(o.max-o.r)*dt*6; o.life-=dt*1.7;}); ripples=ripples.filter(o=>o.life>0);
+  if(state==='FILL'){
+    const was=fillT; fillT+=dt;
+    if(bagDone&&was<2.0&&fillT>=2.0){ ripple(W/2,206,C.redH,W*1.4); shake=Math.max(shake,7); punch=1; }
+    if(fillT>=(bagDone?5.8:4.2)) state='BOARD';
+    return;
+  }
   if(state==='INTRO'){
     const was=introT; introT+=dt;
     if(was<3.05&&introT>=3.05){ ripple(W/2,H/2-30,C.cyanL,W*1.5); punch=1; shake=Math.max(shake,4); }
@@ -667,6 +675,7 @@ function render(){
   drawDust(t);
   if(state==='INTRO')renderIntro();
   else if(state==='TITLE')renderTitle();
+  else if(state==='FILL')renderFill();
   else if(state==='BOARD')renderBoard(); else renderPlay();
   ripples.forEach(o=>{ ctx.save(); ctx.globalAlpha=Math.max(0,o.life)*.5;
     ctx.strokeStyle=o.col; ctx.lineWidth=2; ctx.shadowColor=o.col; ctx.shadowBlur=12;
@@ -793,33 +802,131 @@ function neonTitle(s,x,y,sz){
   text(s,x,y,sz,'#ffffff','center',C.mag,800,2.5);
 }
 function renderTitle(){
-  drawLogo(W/2,14,120);
-  neonTitle('GOUTTE À GOUTTE',W/2,176,17);
-  text('« Quitte à patienter, autant le faire ensemble ! »',W/2,197,9,C.greenL,'center',null,600,.2);
-  // légende
-  const lx=86;
-  drawDrop(lx,206,3);          text('À ATTRAPER',lx+30,216,10,C.cream,'left',null,700,1);
-  drawVirus(lx-3,236,3);       text('À ÉVITER  ·  -1 vie',lx+30,248,10,C.viroP,'left',null,700,1);
-  drawBonus(lx+9,286,'x2');    text('BONUS',lx+30,286,10,C.cyanL,'left',null,700,1);
-  drawDrop(lx,302,2,1);        text('OR = PLUIE DE GOUTTES !',lx+30,309,10,C.gold,'left',C.gold,800,1);
-  text('Doigt · souris · flèches ←  →',W/2,330,9,C.muted,'center',null,600,.5);
-  if(best>0) text('TON RECORD : '+best,W/2,348,10,C.cyanL,'center',C.cyan,800,1);
-  // appel à jouer : pulsation douce (plutôt qu'un clignotement brutal)
+  // ---- identité ----
+  drawLogo(W/2,8,100);
+  neonTitle('GOUTTE À GOUTTE',W/2,132,17);
+  text('« Quitte à patienter, autant le faire ensemble ! »',W/2,152,8.5,C.greenL,'center',null,600,.2);
+
+  // ---- carte "comment jouer" ----
+  fillRR(26,168,W-52,140,14,'rgba(8,14,34,.62)');
+  strokeRR(26,168,W-52,140,14,'rgba(34,211,238,.20)',1);
+  const ix=58, tx=84;
+  drawDrop (ix-9,190-10.5,3);      // à attraper
+  drawVirus(ix-12,224-12,3);       // à éviter
+  drawBonus(ix,258,'x2');          // bonus
+  drawDrop (ix-9,292-10.5,3,1);    // goutte en or
+  const rows=[
+    [190,'À ATTRAPER'  ,'chaque goutte = 1 point'       ,C.cream],
+    [224,'À ÉVITER'    ,'le virus coûte une vie'        ,C.viroP],
+    [258,'BONUS'       ,'tube élargi · ×2 points · vie' ,C.cyanL],
+    [292,'GOUTTE EN OR','déclenche la pluie de gouttes' ,C.gold ],
+  ];
+  for(const rw of rows){
+    text(rw[1],tx,rw[0]-5,10,rw[3],'left',null,800,1);
+    text(rw[2],tx,rw[0]+8,7.5,C.muted,'left',null,600,.2);
+  }
+
+  // ---- appel à jouer (pulsation douce) ----
   ctx.save(); ctx.globalAlpha=.72+.28*Math.sin(performance.now()/380);
-  text('▶  TAPE POUR JOUER',W/2,380,15,'#ffffff','center',C.greenL,800,2); ctx.restore();
-  // bouton "voir le classement" (accessible à tout moment)
+  text('▶  TAPE POUR JOUER',W/2,336,16,'#ffffff','center',C.greenL,800,2); ctx.restore();
+  if(best>0) text('ton record : '+best,W/2,354,8.5,C.cyanL,'center',null,700,.6);
+
+  // ---- classement partagé ----
   fillRR(BOARD_BTN.x,BOARD_BTN.y,BOARD_BTN.w,BOARD_BTN.h,BOARD_BTN.h/2,'rgba(34,211,238,.10)');
   strokeRR(BOARD_BTN.x,BOARD_BTN.y,BOARD_BTN.w,BOARD_BTN.h,BOARD_BTN.h/2,'rgba(34,211,238,.65)',1,C.cyan);
   text('VOIR LE CLASSEMENT',W/2,BOARD_BTN.y+BOARD_BTN.h/2,10,C.cyanL,'center',null,700,1.5);
-  text('classement partagé · tous les joueurs',W/2,442,8,C.muted,'center',null,600,.3);
-  // total de sang collecté par tous les joueurs
+
+  // ---- sang collecté par tous les joueurs ----
   const litT=totalDrops*0.00005, pT=Math.floor(totalDrops/POCHE_DROPS);
-  text('ENSEMBLE : '+litT.toFixed(2).replace('.',',')+' L  ·  '+pT+' POCHE'+(pT>1?'S':''),
-       W/2,461,9,C.redH,'center',C.red,800,1);
-  // lien vers le menu Infos & confidentialité (RGPD)
+  fillRR(34,414,W-68,38,12,'rgba(225,29,72,.10)');
+  strokeRR(34,414,W-68,38,12,'rgba(255,77,109,.32)',1);
+  text('SANG COLLECTÉ ENSEMBLE',W/2,426,7.5,C.redH,'center',null,700,1.4);
+  text(litT.toFixed(2).replace('.',',')+' L   ·   '+pT+' POCHE'+(pT>1?'S':''),
+       W/2,441,12,'#ffffff','center',C.red,800,.8);
+
+  // ---- pied de page ----
   const iy=INFO_BTN.y+INFO_BTN.h/2;
   text('INFOS & CONFIDENTIALITÉ',W/2,iy,8,C.muted,'center',null,600,1);
   r(W/2-70,iy+7,140,1,'rgba(138,160,200,.35)');
+}
+// ===== POCHE DE SANG : animation de fin de partie =====
+// Une vraie poche de don (450 mL) se remplit à l'écran, puis la contribution
+// personnelle du joueur s'affiche.
+function drawBag(cx,cy,w,h,p,t){
+  const x=cx-w/2, y=cy-h/2, rad=15;
+  ctx.save();
+  // anneau de suspension
+  ctx.strokeStyle='rgba(207,233,255,.45)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.arc(cx,y-11,7,Math.PI*1.15,Math.PI*1.85); ctx.stroke();
+  // corps translucide + sang
+  rrPath(x,y,w,h,rad);
+  ctx.save(); ctx.clip();
+  ctx.fillStyle='rgba(180,225,255,.07)'; ctx.fillRect(x,y,w,h);
+  if(p>0.002){
+    const bh=h*p, by=y+h-bh;
+    const g=ctx.createLinearGradient(x,by,x,y+h);
+    g.addColorStop(0,'#ff4d6d'); g.addColorStop(.28,'#e11d48'); g.addColorStop(1,'#5c0f22');
+    ctx.fillStyle=g; ctx.fillRect(x,by,w,bh+2);
+    ctx.fillStyle='rgba(255,175,195,.9)';           // surface qui ondule
+    ctx.beginPath(); ctx.moveTo(x,by+7);
+    for(let i=0;i<=w;i+=3) ctx.lineTo(x+i,by+Math.sin(i*0.14+t*3)*2);
+    ctx.lineTo(x+w,by+7); ctx.closePath(); ctx.fill();
+  }
+  ctx.fillStyle='rgba(255,255,255,.09)'; ctx.fillRect(x+w*0.63,y,w*0.15,h); // reflet
+  ctx.restore();
+  // contour de la poche
+  ctx.shadowColor='rgba(34,211,238,.45)'; ctx.shadowBlur=12;
+  ctx.strokeStyle='rgba(207,233,255,.7)'; ctx.lineWidth=1.6; rrPath(x,y,w,h,rad); ctx.stroke();
+  ctx.shadowBlur=0;
+  // étiquette et graduations
+  fillRR(x+9,y+14,w-18,15,4,'rgba(255,255,255,.12)');
+  text('BIOXA · 450 mL',cx,y+21.5,7,C.cyanL,'center',null,700,.8);
+  ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=1;
+  for(let k=1;k<4;k++){ const gy=y+h-h*k/4;
+    ctx.beginPath(); ctx.moveTo(x+w-13,gy); ctx.lineTo(x+w-5,gy); ctx.stroke(); }
+  // embouts de transfusion
+  fillRR(cx-17,y+h-1,11,13,3,'rgba(207,233,255,.5)');
+  fillRR(cx+6,y+h-1,11,13,3,'rgba(207,233,255,.5)');
+  ctx.restore();
+}
+function renderFill(){
+  const t=fillT, now=performance.now()/1000;
+  let lvl, bags;
+  if(bagDone){
+    // cas rare et festif : la poche se termine sous les yeux du joueur
+    if(t<2.0){ const st=(fillBefore%POCHE_DROPS)/POCHE_DROPS;
+      lvl=st+(1-st)*easeOut(cl01(t/2.0)); bags=Math.floor(fillBefore/POCHE_DROPS); }
+    else if(t<2.9){ lvl=1; bags=Math.floor(fillBefore/POCHE_DROPS); } // on savoure la poche pleine
+    else { lvl=((fillAfter%POCHE_DROPS)/POCHE_DROPS)*easeOut(cl01((t-2.9)/0.9));
+      bags=Math.floor(fillAfter/POCHE_DROPS); }
+  } else {
+    lvl=((fillAfter%POCHE_DROPS)/POCHE_DROPS)*easeOut(cl01(t/1.9));
+    bags=Math.floor(fillAfter/POCHE_DROPS);
+  }
+  text('LE SANG COLLECTÉ ENSEMBLE',W/2,58,9,C.cyanL,'center',C.cyan,800,1.6);
+  // gouttes qui affluent vers la poche pendant le remplissage
+  if(lvl<((fillAfter%POCHE_DROPS)/POCHE_DROPS)-0.002 || t<2.0){
+    for(let i=0;i<6;i++){
+      const ph=(now*1.5+i*0.37)%1, dy=90+ph*40, dx=W/2+Math.sin(i*2.1+now*0.5)*24;
+      ctx.save(); ctx.globalAlpha=(1-ph)*0.95; drawDrop(dx-6,dy-7,2); ctx.restore(); }
+  }
+  drawBag(W/2,206,112,152,lvl,now);
+  text(Math.round(lvl*450)+' mL',W/2,316,19,'#ffffff','center',C.red,800,0);
+  text('sur 450 mL  ·  poche n° '+(bags+1),W/2,335,8,C.muted,'center',null,600,.4);
+  // part personnelle du joueur
+  const cp=cl01((t-(bagDone?3.7:1.95))/0.5);
+  if(cp>0){ ctx.save(); ctx.globalAlpha=cp;
+    fillRR(W/2-92,350,184,36,11,'rgba(132,204,22,.12)');
+    strokeRR(W/2-92,350,184,36,11,'rgba(190,242,100,.42)',1);
+    text('+'+(lastDrops*0.05).toFixed(1).replace('.',',')+' mL grâce à toi',
+         W/2,362,10,C.greenL,'center',C.green,800,.6);
+    text(lastDrops+' gouttes attrapées cette partie',W/2,376,7.5,C.muted,'center',null,600,.2);
+    ctx.restore(); }
+  if(bagDone && t>2.0){ ctx.save(); ctx.globalAlpha=cl01((t-2.0)*2)*cl01((3.6-t)*2);
+    text('UNE POCHE COMPLÉTÉE !',W/2,78,13,'#ffffff','center',C.redH,800,1.5); ctx.restore(); }
+  const bp=cl01((t-(bagDone?4.4:2.6))/0.4);
+  if(bp>0){ ctx.save(); ctx.globalAlpha=bp*(.65+.35*Math.sin(now*3));
+    text('toucher pour voir le classement',W/2,410,9,C.cyanL,'center',null,700,.5); ctx.restore(); }
 }
 function renderBoard(){
   drawLogo(W/2,6,26);
@@ -881,7 +988,18 @@ function showEntry(){
     lastDrops+' gouttes attrapées  ·  meilleur combo x'+comboBest;
   entry.style.display='flex'; nameIn.focus(); nameIn.select();
 }
-async function submitScore(){ lastName=(nameIn.value||'BIO').toUpperCase().slice(0,8); entry.style.display='none'; const d=await lbSave(lastName,lastScore,lastDrops); board=d.board||[]; weekBoard=d.week||[]; totalDrops=d.total||totalDrops; boardTab='week'; state='BOARD'; }
+async function submitScore(){
+  lastName=(nameIn.value||'BIO').toUpperCase().slice(0,8); entry.style.display='none';
+  const before=totalDrops;
+  const d=await lbSave(lastName,lastScore,lastDrops);
+  board=d.board||[]; weekBoard=d.week||[]; boardTab='week';
+  if(d.total){ // on montre la poche se remplir avant le classement
+    totalDrops=d.total;
+    fillT=0; fillBefore=before; fillAfter=d.total;
+    bagDone=Math.floor(d.total/POCHE_DROPS)>Math.floor(before/POCHE_DROPS);
+    state='FILL';
+  } else state='BOARD';
+}
 okBtn.addEventListener('click',submitScore);
 nameIn.addEventListener('keydown',e=>{ if(e.key==='Enter')submitScore(); });
 

@@ -116,12 +116,159 @@ const C={ bg:'#05070f',band:'#0a1030',grid:'#12224a',blue:'#0e7490',blueL:'#22d3
   cream:'#e8eefc',glass:'#cfe9ff',shadow:'#02030a',gold:'#fbbf24',viro:'#a855f7',viroD:'#4c1d95',viroP:'#f0abfc',
   cyan:'#22d3ee',cyanL:'#7df9ff',mag:'#ff2d95',muted:'#8aa0c8' };
 
-const logo=new Image(); let logoReady=false; logo.onload=()=>logoReady=true; logo.src="data:image/png;base64,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";
+/* ===== LOGO BIOXA — vectoriel, d'après le SVG officiel =====
+   Les couleurs de la charte (#05357d bleu, #5f7e24 vert) sont trop sombres sur
+   un fond noir : on garde les mêmes teintes, éclaircies pour rester lisibles. */
+const LG='#a3e635', LB='#3b9dff', LS='#9fb2cf';
+// Les 5 branches vertes (et les 5 bleues) ne diffèrent que par leur point de
+// départ : on ne stocke le tracé qu'une fois.
+const TAIL_G='s-13.5-21.5-54.5-21.5c0,0-21.3-.9-51.5,8.5l-63,20s-23.5,7.5-36.5,7.5c0,0-25,2-52-11,0,0-16-8-26-22,0,0-1-2-2-2s.5,3.2,1,4c2.4,4,7.9,10.3,14,15,24,20,55.5,20.5,66.5,20.5s27,0,46-4c19-4,73-17,73-17,0,0,19-4,34-4s43,2,51,6Z';
+const TAIL_B='s21.5-13.5,21.5-54.5c0,0,.9-21.3-8.5-51.5l-20-63s-7.5-23.5-7.5-36.5c0,0-2-25,11-52,0,0,8-16,22-26,0,0,2-1,2-2s-3.2.5-4,1c-4,2.4-10.3,7.9-15,14-20,24-20.5,55.5-20.5,66.5s0,27,4,46,17,73,17,73c0,0,4,19,4,34s-2,43-6,51Z';
+const GST=[[308,198.3],[302.5,170.8],[297,143.3],[291.5,115.8],[286,88.3]];
+const BST=[[187.7,286],[160.2,291.5],[132.7,297],[105.2,302.5],[77.7,308]];
+// Les 10 branches, dans l'ordre où le logo se construit (vert, bleu, vert…).
+// x0/x1/y0/y1 : l'étendue de chaque branche, utilisée pour la révélation.
+const MARK=[];
+for(let i=0;i<5;i++){
+  MARK.push({d:'M'+GST[i][0]+','+GST[i][1]+TAIL_G,c:LG,dir:'h',
+    x0:22.5-5.5*i,x1:308-5.5*i,y0:176.8-27.5*i,y1:217.3-27.5*i});
+  MARK.push({d:'M'+BST[i][0]+','+BST[i][1]+TAIL_B,c:LB,dir:'v',
+    x0:168.7-27.5*i,x1:209.2-27.5*i,y0:0.5+5.5*i,y1:286+5.5*i});
+}
+const WORD=[
+ {c:LB,d:'M345.7,284.6V.3h60.3c15.3,0,26.6.8,34.2,2s14.3,4,20.1,7.8c8.8,5.8,15.8,14.3,21.1,25.6s8,23.4,8,35.9c0,18.6-6,34.7-17.8,48-3,3-5.8,5.5-8.8,7.8-3,2-7.3,4.3-12.8,6.8,9,2.3,16.6,5.3,22.1,8.8,5.8,3.5,11.1,8.5,16.3,15.1,12.1,15.6,18.3,32.4,18.3,50.7s-4,29.4-12.1,42.2c-8,13.1-18.3,22.1-30.9,27.4-9.8,4.3-25.1,6.5-46.2,6.5h-71.8v-.3ZM357,130.6h51.8c21.9,0,38.9-5.3,51-15.8,12.1-10.6,18.3-25.1,18.3-44.2s-3.3-24.4-10-35.2-14.8-17.8-24.9-21.4c-7.3-2.3-19.8-3.3-37.4-3.3h-48.7v119.8h0ZM357,274.1h61c13.1,0,23.4-1,31.4-3,7.8-2,14.8-5.3,20.9-10,7.5-5.8,13.6-13.6,18.1-23.4,4.5-9.8,7-19.8,7-30.1s-3.5-24.6-10.6-35.4c-7-10.8-16.3-19.1-27.9-24.4-6.5-3-12.6-5-17.8-5.8s-15.3-1.3-30.4-1.3h-51.8v133.4Z'},
+ {c:LB,d:'M515.8,34.9V0h10.8v34.9h-10.8ZM515.8,284.6V80.4h10.8v204.2h-10.8Z'},
+ {c:LB,d:'M534.1,181.9c0-19.3,4.8-37.2,14.3-53.5,9.5-16.3,22.4-29.4,38.7-38.7,16.3-9.5,34.2-14.3,53.5-14.3s37.9,4.8,54.5,14.1c16.6,9.3,29.6,22.4,39.2,38.7,9.5,16.3,14.3,34.4,14.3,54s-2.8,28.1-8.5,41.5c-5.8,13.3-13.6,24.6-23.1,34.4-9.8,9.8-21.1,17.3-34.4,23.1-13.3,5.8-27.4,8.5-42,8.5s-37.2-4.8-53.5-14.3c-16.3-9.5-29.4-22.6-38.7-39.2-9.5-16.6-14.3-34.7-14.3-54.3h0ZM544.7,181.4c0,27.4,9.3,50.7,27.9,69.8,18.6,19.1,41.5,28.6,68.3,28.6s33.7-4.3,48.5-13.1c14.8-8.8,26.6-20.6,35.4-35.7s13.1-31.4,13.1-49c0-27.1-9.3-50-28.1-68.8-18.8-18.8-41.5-28.4-68.3-28.4s-49.7,9.3-68.6,28.1-28.4,41.5-28.4,68.1l.3.3Z'},
+ {c:LG,d:'M729.3,284.6l67.8-102.5-67.8-101.7h13.6l60.8,91.7,61.5-91.7h12.6l-67.3,101.7,67.3,102.5h-12.6l-61.5-91.9-60.8,91.9h-13.6Z'},
+ {c:LG,d:'M1061.4,284.6v-53.5c-10.3,19.1-23.6,33.7-40.4,43.7-16.6,10-35.9,15.1-57.8,15.1s-39.2-4.8-56.3-14.3c-17.1-9.5-30.4-22.4-40.2-38.9-9.8-16.3-14.6-34.4-14.6-54s5-37.4,14.8-54,23.1-29.6,39.9-39.2c16.8-9.5,35.2-14.3,55.3-14.3s26.4,2.3,39.4,6.8c13.1,4.5,24.4,10.8,33.9,19.1,5.3,4.3,9.8,8.8,13.6,13.6s7.8,11.1,12.3,19.3v-53.5h10.8v204.2h-10.8,0ZM863,181.4c0,28.1,9.5,51.5,28.9,70.3,19.1,18.8,43.2,28.1,71.8,28.1s50.5-9.3,69.6-27.9,28.4-41.5,28.4-68.6-4.5-34.2-13.3-49.2-20.9-27.1-36.2-35.9-31.9-13.3-49.7-13.3-34.7,4.3-49.7,13.1c-15.3,8.5-27.4,20.3-36.2,35.2s-13.3,30.9-13.3,48.2h-.3Z'}
+];
+const SUBT=[{c:LS,d:'M596.7,359.7v-64.6h6.5v58.8h26.6v5.8h-33.2Z M622.6,359.7l27.6-64.6h7.3l27.6,64.6h-7l-9.3-21.9h-30.1l-9.3,21.9h-6.8ZM641.1,332.1h25.1l-12.3-29.6s-12.8,29.6-12.8,29.6Z M682.1,359.7v-64.6h16.3c6.5,0,11.3,1.5,14.8,4.3,2,1.5,3.5,3.5,4.5,5.8s1.8,4.8,1.8,7.3-.5,5-1.8,7c-1,2-3,4-5.5,5.8,3.3,1.3,6,3.5,7.8,6.3s2.8,6,2.8,9.5-.8,5.8-2,8.3-3.3,4.8-5.5,6.3c-2,1.5-4.5,2.5-6.8,3-2.5.5-5.8.8-10.3.8h-16.3l.3.3ZM688.6,323.1h8c2.8,0,5,0,6.8-.5s3-.8,4.3-1.5c1.5-.8,2.8-2,3.8-3.8s1.5-3.5,1.5-5.3-.5-3-1.3-4.8c-.8-1.5-1.8-2.8-3-3.8-2.3-1.8-6.3-2.8-11.6-2.8h-8.5v22.4ZM688.6,354h9c5.5,0,9.5-.5,12.1-1.8,2-1,3.8-2.5,5-4.5s2-4.3,2-6.5-.8-4.5-2-6.5c-1.5-2-3.3-3.5-5.5-4.3-1.5-.5-3.3-1-4.8-1s-4.3-.3-7.8-.3h-7.8v25.1l-.3-.3Z M722.5,327.1c0-4.3,1-8.5,2.8-12.8,1.8-4,4.3-7.5,7.3-10.6s6.8-5.3,10.8-7c4.3-1.8,8.5-2.8,13.1-2.8s11.8,1.5,17.1,4.5c5.3,3,9.3,7,12.6,12.3,3,5,4.5,10.8,4.5,16.8s-1,8.8-2.8,12.8c-1.8,4-4.3,7.8-7.3,10.6-3,3-6.8,5.3-10.8,7.3s-8.5,2.8-13.1,2.8-12.1-1.5-17.3-4.5-9.3-7-12.3-12.3-4.5-10.8-4.5-17.1h0ZM729.1,327.3c0,5,1.3,9.8,3.8,14.1s5.8,7.5,10,10,9,3.8,14.1,3.8,9.5-1.3,13.8-3.8,7.5-5.8,10-10,3.8-8.8,3.8-13.8-1.3-9.5-3.8-13.8-5.8-7.5-10-10-8.8-3.8-13.8-3.8-7.3.8-10.6,2.3c-3.5,1.5-6.3,3.5-8.8,5.8-2.5,2.5-4.5,5.3-6,8.8-1.5,3.3-2.3,7-2.3,10.6h-.3Z M792.6,359.7v-64.6h16.3c6.5,0,11.3.5,14.6,1.8,4,1.5,7,4,9.3,7.5s3.5,7.3,3.5,11.6-1.8,10-5.3,13.6-8.3,5.8-13.8,6l18.1,24.1h-8l-21.9-29.4h2.5c4.3,0,7.3,0,9-.5,1.8-.3,3.8-1,5.5-1.8,2.3-1.3,4-3,5.5-5,1.3-2.3,2-4.8,2-7.3s-.8-4.8-2-7-3-4-5-5.3c-2.8-1.5-7-2.5-12.6-2.5h-11.3v58.8h-6.5,0Z M830.6,359.7l27.6-64.6h7.3l27.6,64.6h-7l-9.3-21.9h-30.1l-9.3,21.9h-6.8ZM849.2,332.1h25.1l-12.3-29.6-12.8,29.6Z M895.1,359.7v-58.8h-14.8v-5.8h36.2v5.8h-14.8v58.8h-6.5Z M907.7,327.1c0-4.3,1-8.5,2.8-12.8,1.8-4,4.3-7.5,7.3-10.6s6.8-5.3,10.8-7c4.3-1.8,8.5-2.8,13.1-2.8s11.8,1.5,17.1,4.5c5.3,3,9.3,7,12.6,12.3,3,5,4.5,10.8,4.5,16.8s-1,8.8-2.8,12.8c-1.8,4-4.3,7.8-7.3,10.6-3,3-6.8,5.3-10.8,7.3s-8.5,2.8-13.1,2.8-12.1-1.5-17.3-4.5-9.3-7-12.3-12.3-4.5-10.8-4.5-17.1h0ZM914.2,327.3c0,5,1.3,9.8,3.8,14.1s5.8,7.5,10,10,9,3.8,14.1,3.8,9.5-1.3,13.8-3.8,7.5-5.8,10-10,3.8-8.8,3.8-13.8-1.3-9.5-3.8-13.8-5.8-7.5-10-10-8.8-3.8-13.8-3.8-7.3.8-10.6,2.3c-3.5,1.5-6.3,3.5-8.8,5.8-2.5,2.5-4.5,5.3-6,8.8-1.5,3.3-2.3,7-2.3,10.6h-.3Z M979.8,359.7v-64.6h6.5v64.6h-6.5Z M990.8,359.7v-64.6h16.3c6.5,0,11.3.5,14.6,1.8,4,1.5,7,4,9.3,7.5,2.3,3.5,3.5,7.3,3.5,11.6s-1.8,10-5.3,13.6-8.3,5.8-13.8,6l18.1,24.1h-8l-21.9-29.4h2.5c4.3,0,7.3,0,9-.5,1.8-.3,3.8-1,5.5-1.8,2.3-1.3,4-3,5.5-5,1.3-2.3,2-4.8,2-7.3s-.8-4.8-2-7-3-4-5-5.3c-2.8-1.5-7-2.5-12.6-2.5h-11.3v58.8h-6.5Z M1037.1,359.7v-64.6h35.4v5.8h-28.9v23.1h27.9v5.8h-27.9v23.9h28.9v5.8h-35.4v.3Z'}];
+const MARK_BOX={x:0,y:0,w:310,h:310};
+const WORD_BOX={x:345,y:0,w:728,h:292};
+const SUB_BOX ={x:596,y:293,w:477,h:68};
+const hasP2D=(typeof Path2D!=='undefined');
+function pathOf(o){ if(!o.p) o.p=new Path2D(o.d); return o.p; }
+// dessine une partie du logo dans une boîte de destination
+function svgPart(g,list,box,dx,dy,dw,glowC,glowN){
+  const k=dw/box.w;
+  g.save(); g.translate(dx,dy); g.scale(k,k); g.translate(-box.x,-box.y);
+  if(glowC){ g.shadowColor=glowC; g.shadowBlur=glowN||5; }
+  for(const o of list){ g.fillStyle=o.c; g.fill(pathOf(o)); }
+  g.restore();
+}
+// Logo complet, empilé : symbole, puis BIOXA, puis LABORATOIRE.
+function paintLogo(g,cx,topY,h){
+  const mH=h*0.54, wW=h*0.70, wY=topY+mH+h*0.045;
+  svgPart(g,MARK,MARK_BOX,cx-mH/2,topY,mH,'rgba(34,211,238,.45)',5);
+  svgPart(g,WORD,WORD_BOX,cx-wW/2,wY,wW,'rgba(34,211,238,.45)',5);
+  if(h>=44) svgPart(g,SUBT,SUB_BOX,cx-h*0.26,wY+h*0.31,h*0.52);
+}
+// Le logo ne change jamais : on le peint une fois par taille, puis on le recopie.
+const logoCache={};
 function drawLogo(cx,topY,h){
-  if(!logoReady){ text('BIOXA',cx,topY+h/2,h*0.34,C.cyanL,'center',C.cyan,800,2); return; }
-  const w=h*(logo.width/logo.height);
-  ctx.save(); ctx.shadowColor='rgba(34,211,238,.40)'; ctx.shadowBlur=h*0.09;
-  ctx.drawImage(logo,cx-w/2,topY,w,h); ctx.restore();
+  if(!hasP2D){ text('BIOXA',cx,topY+h/2,h*0.34,C.cyanL,'center',C.cyan,800,2); return; }
+  const key=Math.round(h*2); let e=logoCache[key];
+  if(!e){
+    const S=cv.width/W, wW=h*0.70, pad=8, cw=wW+pad*2, ch=h*1.02+pad*2;
+    const c=document.createElement('canvas');
+    c.width=Math.ceil(cw*S); c.height=Math.ceil(ch*S);
+    const g=c.getContext('2d'); g.scale(S,S);
+    paintLogo(g,pad+wW/2,pad,h);
+    e=logoCache[key]={c:c,dx:pad+wW/2,dy:pad,w:cw,h:ch};
+  }
+  ctx.drawImage(e.c,cx-e.dx,topY-e.dy,e.w,e.h);
+}
+
+// ===== ANIMATION D'INTRODUCTION =====
+let introT=0; const INTRO_END=4.2;
+function cl01(v){ return v<0?0:(v>1?1:v); }
+function easeOut(p){ return 1-Math.pow(1-p,3); }
+// Une branche se révèle depuis son point de départ : les vertes balaient vers la
+// gauche, les bleues vers le haut, avec une ligne lumineuse en tête de tracé.
+function drawBranch(i,p){
+  const b=MARK[i];
+  ctx.save(); ctx.beginPath();
+  if(b.dir==='h'){ const x=b.x1-(b.x1-b.x0)*p; ctx.rect(x,b.y0-8,(b.x1-x)+10,(b.y1-b.y0)+16); }
+  else           { const y=b.y1-(b.y1-b.y0)*p; ctx.rect(b.x0-8,y,(b.x1-b.x0)+16,(b.y1-y)+10); }
+  ctx.clip();
+  ctx.shadowColor=b.c; ctx.shadowBlur=7; ctx.fillStyle=b.c; ctx.fill(pathOf(b));
+  ctx.restore();
+  if(p<1){
+    ctx.save(); ctx.shadowColor='#ffffff'; ctx.shadowBlur=12; ctx.fillStyle='#ffffff';
+    if(b.dir==='h'){ const x=b.x1-(b.x1-b.x0)*p; ctx.fillRect(x-4,b.y0-6,8,(b.y1-b.y0)+12); }
+    else           { const y=b.y1-(b.y1-b.y0)*p; ctx.fillRect(b.x0-6,y-4,(b.x1-b.x0)+12,8); }
+    ctx.restore();
+  }
+}
+// une seule lettre du mot BIOXA (même repère que le mot entier)
+function wordLetter(o,dx,dy,dw,col,offx,alpha){
+  const k=dw/WORD_BOX.w;
+  ctx.save(); ctx.globalAlpha=alpha==null?1:alpha;
+  ctx.translate(dx+offx,dy); ctx.scale(k,k); ctx.translate(-WORD_BOX.x,-WORD_BOX.y);
+  ctx.shadowColor=col||o.c; ctx.shadowBlur=6; ctx.fillStyle=col||o.c; ctx.fill(pathOf(o));
+  ctx.restore();
+}
+function renderIntro(){
+  const t=introT, cx=W/2;
+  if(!hasP2D){ text('BIOXA',cx,H/2,30,C.cyanL,'center',C.cyan,800,3); return; }
+  const LH=250, top=118;
+  const mH=LH*0.54, wW=LH*0.70, wY=top+mH+LH*0.045, sW=LH*0.52, sH=sW/7;
+  const sy=wY+LH*0.31;
+  // une fois le logo entierement construit, il ne bouge plus : on recopie le cache
+  if(t>=3.15){
+    drawLogo(cx,top,LH);
+    if(t>3.05){ const fl=cl01(1-(t-3.05)/0.55);
+      if(fl>0){ ctx.fillStyle='rgba(125,249,255,'+(fl*0.33)+')'; ctx.fillRect(0,0,W,H); } }
+    const tg2=cl01((t-3.2)/0.6);
+    if(tg2>0){ ctx.save(); ctx.globalAlpha=tg2;
+      text('\u00ab Quitte \u00e0 patienter,',cx,sy+46,10,C.greenL,'center',null,700,.5);
+      text('autant le faire ensemble ! \u00bb',cx,sy+62,10,C.greenL,'center',null,700,.5);
+      ctx.restore(); }
+    ctx.save(); ctx.globalAlpha=.55;
+    text('toucher pour passer',cx,H-24,8,C.muted,'center',null,600,.6); ctx.restore();
+    return;
+  }
+  // sursaut numérique de temps à autre
+  const glitch=(t<3.05 && Math.sin(t*31.3)>0.9);
+  ctx.save(); ctx.translate(glitch?Math.sin(t*211)*3:0,0);
+  // 1) le symbole se construit branche par branche
+  ctx.save(); ctx.translate(cx-mH/2,top); ctx.scale(mH/310,mH/310);
+  for(let i=0;i<MARK.length;i++){
+    const p=cl01((t-(0.2+i*0.12))/0.36);
+    if(p>0) drawBranch(i,easeOut(p));
+  }
+  ctx.restore();
+  // 2) BIOXA, lettre par lettre, avec dédoublement chromatique à l'apparition
+  for(let j=0;j<WORD.length;j++){
+    const p=cl01((t-(1.8+j*0.10))/0.34); if(p<=0) continue;
+    const e=easeOut(p), x=cx-wW/2;
+    if(p<1){ const d=(1-e)*6;
+      wordLetter(WORD[j],x,wY,wW,'#ff2d95',-d,e*0.55);
+      wordLetter(WORD[j],x,wY,wW,'#22d3ee', d,e*0.55); }
+    wordLetter(WORD[j],x,wY,wW,null,0,e);
+  }
+  // 3) LABORATOIRE se dévoile de gauche à droite
+  const sp=cl01((t-2.6)/0.55);
+  if(sp>0){
+    ctx.save(); ctx.beginPath(); ctx.rect(cx-sW/2-2,sy-5,sW*sp+2,sH+10); ctx.clip();
+    svgPart(ctx,SUBT,SUB_BOX,cx-sW/2,sy,sW,'rgba(159,178,207,.5)',4); ctx.restore();
+    if(sp<1){ ctx.save(); ctx.shadowColor=C.cyanL; ctx.shadowBlur=9;
+      r(cx-sW/2+sW*sp,sy-4,1.5,sH+8,C.cyanL); ctx.restore(); }
+  }
+  // barres de parasites pendant la construction
+  if(glitch){ ctx.save(); ctx.globalAlpha=.22; ctx.fillStyle=C.cyanL;
+    for(let k=0;k<3;k++) ctx.fillRect(0,top+((k*97+t*613)%LH),W,2); ctx.restore(); }
+  ctx.restore();
+  // 4) éclair final puis signature
+  if(t>3.05){ const fl=cl01(1-(t-3.05)/0.55);
+    if(fl>0){ ctx.fillStyle='rgba(125,249,255,'+(fl*0.33)+')'; ctx.fillRect(0,0,W,H); } }
+  const tg=cl01((t-3.2)/0.6);
+  if(tg>0){ ctx.save(); ctx.globalAlpha=tg;
+    text('« Quitte à patienter,',cx,sy+46,10,C.greenL,'center',null,700,.5);
+    text('autant le faire ensemble ! »',cx,sy+62,10,C.greenL,'center',null,700,.5);
+    ctx.restore(); }
+  if(t>0.8){ ctx.save(); ctx.globalAlpha=Math.min(.55,(t-0.8)*0.8);
+    text('toucher pour passer',cx,H-24,8,C.muted,'center',null,600,.6); ctx.restore(); }
 }
 function r(x,y,w,h,col){ ctx.fillStyle=col; ctx.fillRect(x,y,w,h); }
 // rectangle à coins arrondis
@@ -240,7 +387,7 @@ function miniArrows(cx,cy){ ctx.save(); ctx.shadowColor=C.cyanL; ctx.shadowBlur=
   ctx.strokeStyle=C.cyanL; ctx.lineWidth=1.6; arrowsPath(cx,cy); ctx.stroke(); ctx.restore(); }
 
 // ===================== ÉTAT =====================
-let state='TITLE', items=[], parts=[], floats=[];
+let state='INTRO', items=[], parts=[], floats=[];
 let score=0, lives=3, level=1, tubeX=W/2, tubeMouthY=H-94;
 let spawnT=0, shake=0, flash=0, wideTimer=0, x2Timer=0;
 let combo=0, comboT=0, comboBest=0, frenzyTimer=0, goldFlash=0, lvlPrev=3; // effets "waouh"
@@ -310,9 +457,10 @@ cv.addEventListener('touchmove',onMove,{passive:false});
 function openBoard(){ state='BOARD'; lbLoad().then(d=>{ if(d){ board=d.board||board; weekBoard=d.week||weekBoard; totalDrops=d.total||totalDrops; } }); }
 function inBtn(x,y,b){ return x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h; }
 // clic clavier (espace/entrée) : pas de coordonnées → comportement par défaut
-function tap(){ if(state==='TITLE')resetGame(); else if(state==='BOARD')state='TITLE'; }
+function tap(){ if(state==='INTRO'){state='TITLE';return;} if(state==='TITLE')resetGame(); else if(state==='BOARD')state='TITLE'; }
 // clic/toucher avec coordonnées
 function tapAt(x,y){
+  if(state==='INTRO'){ state='TITLE'; return; }
   if(state==='TITLE'){
     if(inBtn(x,y,INFO_BTN)) openInfo();
     else if(inBtn(x,y,BOARD_BTN)) openBoard();
@@ -339,6 +487,12 @@ function update(dt){
   parts.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=320*dt;p.life-=dt;}); parts=parts.filter(p=>p.life>0);
   floats.forEach(f=>{f.y-=24*dt;f.life-=dt;}); floats=floats.filter(f=>f.life>0);
   ripples.forEach(o=>{o.r+=(o.max-o.r)*dt*6; o.life-=dt*1.7;}); ripples=ripples.filter(o=>o.life>0);
+  if(state==='INTRO'){
+    const was=introT; introT+=dt;
+    if(was<3.05&&introT>=3.05){ ripple(W/2,H/2-30,C.cyanL,W*1.5); punch=1; shake=Math.max(shake,4); }
+    if(introT>=INTRO_END) state='TITLE';
+    return;
+  }
   if(state!=='PLAY') return;
 
   if(wideTimer>0)wideTimer-=dt; if(x2Timer>0)x2Timer-=dt;
@@ -457,9 +611,9 @@ let sweepGrad=null;
 function drawBackground(t){
   // L'horizon se place dans un espace libre selon l'écran affiché, pour que la
   // ligne néon ne vienne jamais barrer un texte.
-  const city=(state!=='BOARD');
+  const city=(state==='PLAY'||state==='TITLE');
   const hz=state==='PLAY'?H*0.42:state==='TITLE'?H*0.70:H*0.30;
-  ctx.drawImage(bgLayer(state,hz,city),0,0,W,H);
+  ctx.drawImage(bgLayer((city?'c':'n')+Math.round(hz),hz,city),0,0,W,H);
   // balayage lumineux qui descend lentement
   if(!sweepGrad){ sweepGrad=ctx.createLinearGradient(0,-42,0,42);
     sweepGrad.addColorStop(0,'rgba(125,249,255,0)'); sweepGrad.addColorStop(.5,'rgba(125,249,255,.05)');
@@ -511,7 +665,9 @@ function render(){
   if(shake>0)ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);
   drawBackground(t);
   drawDust(t);
-  if(state==='TITLE')renderTitle(); else if(state==='BOARD')renderBoard(); else renderPlay();
+  if(state==='INTRO')renderIntro();
+  else if(state==='TITLE')renderTitle();
+  else if(state==='BOARD')renderBoard(); else renderPlay();
   ripples.forEach(o=>{ ctx.save(); ctx.globalAlpha=Math.max(0,o.life)*.5;
     ctx.strokeStyle=o.col; ctx.lineWidth=2; ctx.shadowColor=o.col; ctx.shadowBlur=12;
     ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,6.283); ctx.stroke(); ctx.restore(); });

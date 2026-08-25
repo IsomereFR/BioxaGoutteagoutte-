@@ -24,6 +24,12 @@ Rendu **réaliste / cyberpunk** dessiné en vectoriel (aucune image externe, auc
 police téléchargée) : ville néon, grille en perspective, gouttes en verre,
 traînées lumineuses et ondes de choc.
 
+**Animation d'ouverture** : au lancement, le logo Bioxa se construit branche par
+branche (les vertes balaient vers la gauche, les bleues vers le haut), puis
+« Bioxa » apparaît lettre par lettre et « LABORATOIRE » se dévoile. Un toucher
+passe l'animation. Le logo est tracé à partir du SVG officiel : il reste net à
+toutes les tailles.
+
 Mécaniques de jeu :
 
 - Départ direct au **niveau 3**.

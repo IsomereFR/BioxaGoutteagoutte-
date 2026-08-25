@@ -18,6 +18,25 @@ entre tous les joueurs**.
    et renvoie le **top 10** commun à tout le monde, ainsi que le **total de sang
    collecté** par l'ensemble des joueurs.
 
+## Le jeu
+
+Rendu **réaliste / cyberpunk** dessiné en vectoriel (aucune image externe, aucune
+police téléchargée) : ville néon, grille en perspective, gouttes en verre,
+traînées lumineuses et ondes de choc.
+
+Mécaniques de jeu :
+
+- Départ direct au **niveau 3**.
+- **Combos** : chaque goutte enchaînée fait monter un compteur qui **multiplie
+  vraiment les points** (×2 à 8, ×3 à 16, ×4 à 24, ×5 à 32). Une jauge se vide :
+  il faut enchaîner pour ne pas le perdre.
+- **Prise parfaite** : attraper une goutte pile au centre du tube rapporte un bonus.
+- **Goutte en or** : déclenche 5 s de **pluie de gouttes** (que du sang, sans pénalité).
+- **Paliers** (25, 50, 100, 200, 400 points) et **record personnel** célébrés à l'écran.
+
+> Le score peut être multiplié par les combos, mais le **sang collecté se compte
+> en gouttes réellement attrapées** — le compteur collectif reste donc exact.
+
 Le classement est **consultable à tout moment** depuis le menu (bouton
 « VOIR LE CLASSEMENT »), avec deux onglets : **Cette semaine** et **Tous les
 temps** (le classement de la semaine se réinitialise tout seul chaque semaine).

@@ -131,11 +131,16 @@ module.exports = async (req, res) => {
       if (!Number.isFinite(score)) score = 0;
       score = Math.max(0, Math.min(999999, score)); // garde-fou anti-triche basique
 
+      // Le score peut être multiplié par les combos : le sang collecté se compte
+      // en GOUTTES réellement attrapées, jamais en points.
+      let drops = parseInt(body.drops, 10);
+      if (!Number.isFinite(drops)) drops = score; // anciennes versions du jeu
+      drops = Math.max(0, Math.min(score, drops));
+
       const entry = { name, score };
       const list = await pushTop10(KEY, entry);
       const week = await pushTop10(wKey, entry);
-      // 1 goutte = 1 point : on ajoute le score de la partie au total global.
-      const total = await redis(['INCRBY', TOTAL_KEY, score]);
+      const total = await redis(['INCRBY', TOTAL_KEY, drops]);
 
       res.status(200).json({
         board: list,

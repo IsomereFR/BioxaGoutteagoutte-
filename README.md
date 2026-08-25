@@ -91,7 +91,9 @@ qui accompagne ce projet, ou ci-dessous en version courte.
 
 Le jeu enregistre uniquement un **pseudo** (saisi par le joueur, sans son vrai nom),
 un **score** et la **semaine** de jeu, pour faire fonctionner le classement partagé.
-Il n'y a **aucun cookie**, aucun traceur, aucune donnée de santé.
+Il n'y a **aucun cookie publicitaire**, aucun traceur, aucune donnée de santé.
+Le **record personnel** est gardé dans le navigateur du joueur (stockage local)
+et n'est jamais envoyé au serveur.
 
 - Une page **« Infos & confidentialité »** est accessible depuis l'accueil du jeu.
 - Le classement de la semaine est **effacé automatiquement** chaque semaine.

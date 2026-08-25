@@ -39,6 +39,12 @@ Mécaniques de jeu :
 - **Prise parfaite** : attraper une goutte pile au centre du tube rapporte un bonus.
 - **Goutte en or** : déclenche 5 s de **pluie de gouttes** (que du sang, sans pénalité).
 - **Paliers** (25, 50, 100, 200, 400 points) et **record personnel** célébrés à l'écran.
+- **Défi du jour** : une règle spéciale, **la même pour tous**, qui change chaque
+  jour (tube fin, chute libre, une seule vie, invasion, ruée vers l'or, précision,
+  marathon). Il a son **propre classement**, remis à zéro chaque jour. Les scores du
+  défi ne se mélangent pas aux autres classements — les règles étant différentes,
+  la comparaison serait faussée. Le jour est calculé en temps universel côté jeu et
+  côté serveur, pour que tout le monde ait le même défi au même moment.
 
 > Le score peut être multiplié par les combos, mais le **sang collecté se compte
 > en gouttes réellement attrapées** — le compteur collectif reste donc exact.
@@ -47,6 +53,11 @@ Mécaniques de jeu :
 don (450 mL) se remplir** à l'écran jusqu'au niveau atteint collectivement, puis
 sa contribution personnelle en mL. Si la poche se complète, elle est célébrée
 avant qu'une nouvelle commence.
+
+Un encart **« Le saviez-vous ? »** y affiche une information sur le don du sang,
+différente à chaque partie. Ces repères viennent de la communication publique sur
+le don ; ils sont regroupés dans la liste `FACTS` de `index.html` — **à faire
+valider par votre service communication** avant diffusion, et faciles à modifier.
 
 Le classement est **consultable à tout moment** depuis le menu (bouton
 « VOIR LE CLASSEMENT »), avec deux onglets : **Cette semaine** et **Tous les

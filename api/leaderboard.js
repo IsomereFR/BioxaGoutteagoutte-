@@ -69,6 +69,15 @@ function isoWeekId(d) {
 function weekKeyNow() {
   return 'bioxa_goutte_lb_week_' + isoWeekId(new Date());
 }
+// Clé du DÉFI DU JOUR. Le jour est calculé en temps universel, comme dans le jeu,
+// pour que tout le monde ait le même défi et le même classement au même moment.
+function dayKeyNow() {
+  const d = new Date();
+  const iso = d.getUTCFullYear() + '-' +
+    String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getUTCDate()).padStart(2, '0');
+  return 'bioxa_goutte_lb_day_' + iso;
+}
 
 // Envoie une commande Redis via l'API REST d'Upstash.
 async function redis(command) {
@@ -86,35 +95,40 @@ async function redis(command) {
 }
 
 // Ajoute une entrée dans une liste "top 10" (triée par score décroissant).
-async function pushTop10(key, entry) {
+async function pushTop10(key, entry, ttl) {
   const raw = await redis(['GET', key]);
   let list = raw ? JSON.parse(raw) : [];
   list.push(entry);
   list.sort((a, b) => b.score - a.score);
   list = list.slice(0, 10);
-  await redis(['SET', key, JSON.stringify(list)]);
+  // Les classements temporaires s'effacent tout seuls : rien à nettoyer à la main.
+  await redis(ttl ? ['SET', key, JSON.stringify(list), 'EX', String(ttl)]
+                  : ['SET', key, JSON.stringify(list)]);
   return list;
 }
+const TTL_DAY = 4 * 86400, TTL_WEEK = 40 * 86400;
 
 module.exports = async (req, res) => {
   // Si les clés Upstash ne sont pas configurées, on renvoie un état vide
   // au lieu de planter (le jeu reste jouable).
   if (!REST_URL || !REST_TOKEN) {
-    res.status(200).json({ board: [], week: [], total: 0 });
+    res.status(200).json({ board: [], week: [], day: [], total: 0 });
     return;
   }
 
   try {
-    const wKey = weekKeyNow();
+    const wKey = weekKeyNow(), dKey = dayKeyNow();
 
-    // GET : lire les deux classements + le total de sang collecté
+    // GET : lire les trois classements + le total de sang collecté
     if (req.method === 'GET') {
       const rawList = await redis(['GET', KEY]);
       const rawWeek = await redis(['GET', wKey]);
+      const rawDay = await redis(['GET', dKey]);
       const rawTotal = await redis(['GET', TOTAL_KEY]);
       res.status(200).json({
         board: rawList ? JSON.parse(rawList) : [],
         week: rawWeek ? JSON.parse(rawWeek) : [],
+        day: rawDay ? JSON.parse(rawDay) : [],
         total: SEED_DROPS + (parseInt(rawTotal, 10) || 0),
       });
       return;
@@ -137,14 +151,27 @@ module.exports = async (req, res) => {
       if (!Number.isFinite(drops)) drops = score; // anciennes versions du jeu
       drops = Math.max(0, Math.min(score, drops));
 
+      // Une partie du DÉFI DU JOUR suit des règles spéciales : son score ne va
+      // que dans le classement du jour, sinon la comparaison serait faussée.
+      const daily = body.daily === true;
       const entry = { name, score };
-      const list = await pushTop10(KEY, entry);
-      const week = await pushTop10(wKey, entry);
+      let list, week, day;
+      if (daily) {
+        day = await pushTop10(dKey, entry, TTL_DAY);
+        list = JSON.parse((await redis(['GET', KEY])) || '[]');
+        week = JSON.parse((await redis(['GET', wKey])) || '[]');
+      } else {
+        list = await pushTop10(KEY, entry);
+        week = await pushTop10(wKey, entry, TTL_WEEK);
+        day = JSON.parse((await redis(['GET', dKey])) || '[]');
+      }
+      // Le sang collecté compte dans les deux cas : une goutte reste une goutte.
       const total = await redis(['INCRBY', TOTAL_KEY, drops]);
 
       res.status(200).json({
         board: list,
         week,
+        day,
         total: SEED_DROPS + (parseInt(total, 10) || 0),
       });
       return;
@@ -153,6 +180,6 @@ module.exports = async (req, res) => {
     res.status(405).json({ error: 'Méthode non autorisée' });
   } catch (e) {
     // En cas d'erreur réseau/base, on renvoie un état vide pour ne pas casser le jeu.
-    res.status(200).json({ board: [], week: [], total: 0 });
+    res.status(200).json({ board: [], week: [], day: [], total: 0 });
   }
 };

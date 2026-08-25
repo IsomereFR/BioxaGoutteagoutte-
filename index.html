@@ -84,8 +84,9 @@
     <h3>Ce que nous ne faisons pas</h3>
     <p>Aucun cookie publicitaire, aucun traceur, aucune donnée de santé. Le jeu ne demande ni compte, ni e-mail, ni identité.</p>
 
-    <h3>Votre record personnel</h3>
-    <p>Votre meilleur score est conservé <b>uniquement dans votre navigateur</b> (stockage local), pour vous permettre de battre votre record. Il n'est <b>jamais envoyé</b> à nos serveurs et disparaît si vous effacez les données de navigation.</p>
+    <h3>Votre progression</h3>
+    <p>Votre meilleur score, vos <b>badges</b>, votre <b>grade de donneur</b> et votre total de gouttes sont conservés <b>uniquement dans votre navigateur</b> (stockage local), pour vous permettre de progresser d'une visite à l'autre. Ils <b>ne sont jamais envoyés</b> à nos serveurs et disparaissent si vous effacez les données de navigation.</p>
+    <p>Seule exception : lorsque vous validez un score, le numéro de votre grade (un chiffre de 0 à 4) accompagne votre pseudo pour être affiché dans le classement. Aucune autre information de progression ne quitte votre appareil.</p>
 
     <h3>Hébergement &amp; localisation</h3>
     <p>Le site est mis en ligne via <b>Vercel</b> (fonction exécutée en France) et le classement est stocké chez <b>Upstash</b>, sur une base située en <b>Union européenne</b>. Comme tout site web, votre adresse IP peut apparaître temporairement dans les journaux techniques de ces prestataires.</p>
@@ -311,8 +312,9 @@ function dropPath(g,cx,cy,w,h){ const rx=w/2;
 // Une goutte a toujours la même apparence : on la peint une fois dans une image
 // mémoire (halo compris) et on se contente de la recopier ensuite.
 const dropCache={};
-function dropSprite(s,gold){
-  const key=s+(gold?'g':'r');
+function dropSprite(s,kind){
+  kind=kind|0;
+  const key=s+['r','g','c'][kind];
   if(dropCache[key]) return dropCache[key];
   const w=DW*s, h=DH*s, pad=Math.ceil(w*0.95)+2;
   const S=cv.width/W, c=document.createElement('canvas');
@@ -320,14 +322,17 @@ function dropSprite(s,gold){
   const g=c.getContext('2d'); g.scale(S,S);
   const cx=pad+w/2, cy=pad+h/2;
   const gr=g.createRadialGradient(cx-w*0.22,cy+h*0.02,w*0.05, cx,cy+h*0.06,w*0.9);
-  if(gold){ gr.addColorStop(0,'#fffbe6'); gr.addColorStop(.32,'#ffd54a');
-            gr.addColorStop(.72,'#e0a000'); gr.addColorStop(1,'#7a5500'); }
-  else    { gr.addColorStop(0,'#ff9db0'); gr.addColorStop(.30,'#e11d48');
-            gr.addColorStop(.74,'#9d0028'); gr.addColorStop(1,'#4d0016'); }
-  g.shadowColor=gold?'rgba(251,191,36,.9)':'rgba(225,29,72,.7)'; g.shadowBlur=w*0.85;
+  if(kind===1){ gr.addColorStop(0,'#fffbe6'); gr.addColorStop(.32,'#ffd54a');
+                gr.addColorStop(.72,'#e0a000'); gr.addColorStop(1,'#7a5500'); }
+  else if(kind===2){ gr.addColorStop(0,'#ffffff'); gr.addColorStop(.30,'#d8fbff');
+                     gr.addColorStop(.66,'#22d3ee'); gr.addColorStop(1,'#0b5f70'); }
+  else        { gr.addColorStop(0,'#ff9db0'); gr.addColorStop(.30,'#e11d48');
+                gr.addColorStop(.74,'#9d0028'); gr.addColorStop(1,'#4d0016'); }
+  g.shadowColor=kind===1?'rgba(251,191,36,.9)':kind===2?'rgba(125,249,255,.95)':'rgba(225,29,72,.7)';
+  g.shadowBlur=w*(kind===2?1.15:0.85);
   dropPath(g,cx,cy,w,h); g.fillStyle=gr; g.fill();
   g.shadowBlur=0;
-  g.strokeStyle=gold?'rgba(255,244,190,.8)':'rgba(255,150,170,.5)';
+  g.strokeStyle=kind===1?'rgba(255,244,190,.8)':kind===2?'rgba(255,255,255,.9)':'rgba(255,150,170,.5)';
   g.lineWidth=Math.max(.5,s*0.2); dropPath(g,cx,cy,w,h); g.stroke();
   g.fillStyle='rgba(255,255,255,.9)'; // reflet principal
   g.beginPath(); g.ellipse(cx-w*0.20,cy+h*0.01,w*0.13,h*0.10,-0.5,0,6.283); g.fill();
@@ -336,8 +341,8 @@ function dropSprite(s,gold){
   dropCache[key]={c:c,pad:pad,w:w+pad*2,h:h+pad*2};
   return dropCache[key];
 }
-function drawDrop(px,py,s,gold){
-  const sp=dropSprite(s,gold);
+function drawDrop(px,py,s,kind){
+  const sp=dropSprite(s,kind);
   ctx.drawImage(sp.c,px-sp.pad,py-sp.pad,sp.w,sp.h);
 }
 
@@ -392,12 +397,57 @@ let score=0, lives=3, level=1, tubeX=W/2, tubeMouthY=H-94;
 let spawnT=0, shake=0, flash=0, wideTimer=0, x2Timer=0;
 let combo=0, comboT=0, comboBest=0, frenzyTimer=0, goldFlash=0, lvlPrev=3; // effets "waouh"
 let goldT=0;   // temps écoulé depuis la dernière goutte dorée
+let perfectCount=0, goldCount=0, virusHits=0, crystalCaught=false, clutch=false;
+let crystalSpawned=false, slowT=0;  // goutte cristal : une seule par partie + ralenti
 let dropsCaught=0, levelDrops=0, milestoneIdx=0, punch=0, ripples=[];
 let bannerT=0, bannerTxt='', bannerCol='#fff', recordBeaten=false, newRecordShown=false;
 let board=[], weekBoard=[], dayBoard=[], boardTab='all', lastScore=0, lastDrops=0, lastName='', totalDrops=0;
 let fillT=0, fillBefore=0, fillAfter=0, bagDone=false; // animation de la poche
 // Record personnel : gardé dans le navigateur du joueur, jamais envoyé au serveur.
 let best=0; try{ best=parseInt(localStorage.getItem('bioxa_best'),10)||0; }catch(e){}
+
+// ===== PROGRESSION DU JOUEUR (gardée dans SON navigateur, jamais envoyée) =====
+// Grade de donneur : monte avec le total de gouttes collectées, toutes parties confondues.
+const GRADES=[
+  {d:0,    nom:'APPRENTI',         c:'#8aa0c8'},
+  {d:100,  nom:'DONNEUR',          c:'#22d3ee'},
+  {d:400,  nom:'DONNEUR RÉGULIER', c:'#84cc16'},
+  {d:1200, nom:'DONNEUR HÉROÏQUE', c:'#fbbf24'},
+  {d:3000, nom:'LÉGENDE BIOXA',    c:'#ff2d95'},
+];
+// Les 16 badges à décrocher.
+const BADGES=[
+  {k:'first',  s:'1',   n:'PREMIÈRE',   d:'terminer une partie',              c:'#22d3ee'},
+  {k:'c100',   s:'100', n:'CENTAINE',   d:'atteindre 100 points',             c:'#bef264'},
+  {k:'c250',   s:'250', n:'SCORE 250',  d:'atteindre 250 points',             c:'#bef264'},
+  {k:'lvl15',  s:'15',  n:'NIVEAU 15',  d:'atteindre le niveau 15',           c:'#a855f7'},
+  {k:'combo20',s:'×20', n:'MÉTRONOME',  d:'enchaîner un combo ×20',           c:'#fbbf24'},
+  {k:'perf10', s:'◎',   n:'CHIRURGIEN', d:'10 prises parfaites en une partie',c:'#7df9ff'},
+  {k:'gold5',  s:'OR',  n:'ORPAILLEUR', d:'5 gouttes dorées en une partie',   c:'#fbbf24'},
+  {k:'crystal',s:'◆',   n:'CRISTAL',    d:'attraper la goutte cristal',       c:'#a5f3fc'},
+  {k:'novirus',s:'V',   n:'IMMUNISÉ',   d:'30 gouttes sans toucher un virus', c:'#84cc16'},
+  {k:'clutch', s:'!',   n:'IN EXTREMIS',d:'100 points avec une seule vie',    c:'#ff4d6d'},
+  {k:'bag',    s:'P',   n:'POCHE PLEINE',d:'compléter une poche de sang',     c:'#e11d48'},
+  {k:'top3',   s:'3',   n:'PODIUM',     d:'entrer dans le top 3',             c:'#fbbf24'},
+  {k:'defi1',  s:'D',   n:'CHALLENGER', d:'jouer un défi du jour',            c:'#ff2d95'},
+  {k:'defi7',  s:'7',   n:'LES 7 DÉFIS',d:'jouer les 7 défis différents',     c:'#ff2d95'},
+  {k:'d500',   s:'500', n:'GÉNÉREUX',   d:'500 gouttes au total',             c:'#e11d48'},
+  {k:'d2000',  s:'2K',  n:'HÉROÏQUE',   d:'2000 gouttes au total',            c:'#e11d48'},
+];
+let myDrops=0, badges={}, defisJoues={}, newBadges=[];
+try{ myDrops=parseInt(localStorage.getItem('bioxa_drops'),10)||0; }catch(e){}
+try{ badges=JSON.parse(localStorage.getItem('bioxa_badges')||'{}')||{}; }catch(e){}
+try{ defisJoues=JSON.parse(localStorage.getItem('bioxa_defis')||'{}')||{}; }catch(e){}
+function saveProg(){ try{
+  localStorage.setItem('bioxa_drops',String(myDrops));
+  localStorage.setItem('bioxa_badges',JSON.stringify(badges));
+  localStorage.setItem('bioxa_defis',JSON.stringify(defisJoues));
+}catch(e){} }
+function gradeIdx(){ let i=0; for(let k=0;k<GRADES.length;k++) if(myDrops>=GRADES[k].d) i=k; return i; }
+function unlock(k){ if(badges[k]) return false;
+  badges[k]=1; const b=BADGES.find(x=>x.k===k); if(b) newBadges.push(b.n); return true; }
+function badgeCount(){ let c=0; for(const b of BADGES) if(badges[b.k]) c++; return c; }
+function nextBadge(){ for(const b of BADGES) if(!badges[b.k]) return b; return null; }
 
 // Paliers à franchir pendant une partie (donne un but à court terme)
 const MILESTONES=[
@@ -435,7 +485,10 @@ function resetGame(daily){
   items=[];parts=[];floats=[];ripples=[];score=0;lives=(DM&&DM.lives)||3;level=lv;tubeX=W/2;
   spawnT=0;shake=0;flash=0;wideTimer=0;x2Timer=0;
   combo=0;comboT=0;comboBest=0;frenzyTimer=0;goldFlash=0;lvlPrev=lv;goldT=0;
-  dropsCaught=0;levelDrops=0;milestoneIdx=0;punch=0;bannerT=0;recordBeaten=false;newRecordShown=false;state='PLAY';
+  dropsCaught=0;levelDrops=0;milestoneIdx=0;punch=0;bannerT=0;goldT=0;
+  perfectCount=0;goldCount=0;virusHits=0;crystalCaught=false;clutch=false;
+  crystalSpawned=false;slowT=0;newBadges=[];
+  if(dailyMode){ defisJoues[String(dayIndex()%DEFIS.length)]=1; saveProg(); }recordBeaten=false;newRecordShown=false;state='PLAY';
   if(DM) banner(DM.nom,C.gold,DM.desc);
 }
 
@@ -452,15 +505,19 @@ function spawnItem(){
   // Garantie : au bout de 14 s sans goutte dorée, la prochaine en est une.
   // Sans cela, beaucoup de parties se terminaient sans jamais en voir passer.
   let type='blood';
-  if(goldT>14) type='gold';
+  // La goutte CRISTAL : environ une partie sur quinze, une seule par partie.
+  if(!crystalSpawned && !DM && Math.random()<0.0016) type='crystal';
+  else if(goldT>14) type='gold';
   else if(r1<virusChance)type='virus';
   else if(r1<virusChance+bonusChance)type='bonus';
   else if(r1<virusChance+bonusChance+goldChance)type='gold'; // goutte en OR
   if(type==='gold') goldT=0;
+  if(type==='crystal') crystalSpawned=true;
   const e={type,y:-30,resolved:false,missed:false};
   if(type==='blood'){ e.w=18;e.h=21;e.vy=baseV*(0.9+Math.random()*0.35); }
   else if(type==='virus'){ e.w=24;e.h=24;e.vy=baseV*(0.85+Math.random()*0.30); }
   else if(type==='gold'){ e.w=18;e.h=21;e.vy=baseV*0.8; }
+  else if(type==='crystal'){ e.w=18;e.h=21;e.vy=baseV*0.45; } // elle tombe lentement
   else { e.w=18;e.h=18;e.vy=baseV*0.78; e.sub=['wide','x2','wide','x2','life'][(Math.random()*5)|0]; }
   e.x=10+Math.random()*(W-20-e.w); items.push(e);
 }
@@ -472,13 +529,14 @@ function applyBonus(sub,x,y){
 }
 
 // ---- entrées ----
-const BOARD_BTN={x:W/2-102,y:382,w:204,h:26}; // bouton "CLASSEMENT" du menu
-const DEFI_BTN ={x:24,y:152,w:252,h:36};      // bandeau "DÉFI DU JOUR" (accueil)
+const BOARD_BTN={x:22,y:390,w:126,h:26};      // bouton "CLASSEMENT" du menu
+const DEFI_BTN ={x:24,y:150,w:252,h:36};      // bandeau "DÉFI DU JOUR" (accueil)
+const BADGE_BTN={x:152,y:390,w:126,h:26};     // bouton "MES BADGES" (accueil)
 const TAB_DAY ={x:22,y:52,w:84,h:24};         // onglet "défi du jour"
 const TAB_WEEK={x:108,y:52,w:84,h:24};        // onglet "cette semaine"
 const TAB_ALL ={x:194,y:52,w:84,h:24};        // onglet "tous les temps"
 const REPLAY_BTN={x:W/2-70,y:428,w:140,h:30}; // bouton REJOUER (écran classement)
-const INFO_BTN={x:W/2-95,y:466,w:190,h:22};   // lien "infos & confidentialité" (accueil)
+const INFO_BTN={x:W/2-95,y:468,w:190,h:20};   // lien "infos & confidentialité" (accueil)
 const POCHE_DROPS=9000;                        // 1 poche de sang = 450 mL = 9000 gouttes (×50 µL)
 function pointerX(e){ const rect=cv.getBoundingClientRect();
   const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
@@ -515,9 +573,11 @@ function tapAt(x,y){
   if(state==='TITLE'){
     if(inBtn(x,y,INFO_BTN)) openInfo();
     else if(inBtn(x,y,DEFI_BTN)) resetGame(true);
+    else if(inBtn(x,y,BADGE_BTN)) state='BADGES';
     else if(inBtn(x,y,BOARD_BTN)) openBoard();
     else resetGame(false);
   }
+  else if(state==='BADGES'){ state='TITLE'; }
   else if(state==='BOARD'){
     if(inBtn(x,y,TAB_DAY)) boardTab='day';
     else if(inBtn(x,y,TAB_WEEK)) boardTab='week';
@@ -558,6 +618,8 @@ function update(dt){
   if(frenzyTimer>0)frenzyTimer-=dt; if(goldFlash>0)goldFlash-=dt*1.6;
   if(comboT>0){ comboT-=dt; if(comboT<=0)combo=0; } // le combo s'éteint si on traîne
   if(frenzyTimer<=0) goldT+=dt;                     // on ne compte pas pendant la pluie
+  if(slowT>0) slowT-=dt;
+  const sdt=slowT>0?dt*0.40:dt;                     // ralenti après la goutte cristal
   const tf=(DM&&DM.tube)||1;
   const half=(wideTimer>0?23:15)*tf;
   if(keys['ArrowLeft'])  tubeX-=180*dt;
@@ -573,11 +635,11 @@ function update(dt){
     for(let k=0;k<5;k++) burst(40+Math.random()*(W-80),90+Math.random()*150,[C.greenL,C.gold,C.cyanL][k%3],5); }
   let spawnEvery=Math.max(0.45,1.2-(level-1)*0.06);
   if(frenzyTimer>0) spawnEvery=0.16; // PLUIE DE GOUTTES !
-  spawnT-=dt; if(spawnT<=0){ spawnItem(); spawnT=spawnEvery; }
+  spawnT-=sdt; if(spawnT<=0){ spawnItem(); spawnT=spawnEvery; }
 
   const mouthY=tubeMouthY, tw=(wideTimer>0?46:30)*tf, halfBox=tw/2+2;
   for(const e of items){
-    e.y+=e.vy*dt; const cx=e.x+e.w/2;
+    e.y+=e.vy*sdt; const cx=e.x+e.w/2;
     // ATTRAPÉ dès que le tube TOUCHE la goutte (chevauchement des rectangles)
     const touch = !e.resolved &&
       e.x < tubeX+halfBox && e.x+e.w > tubeX-halfBox &&
@@ -595,7 +657,8 @@ function update(dt){
         floats.push({x:cx,y:mouthY-8,txt:(perfect?'PARFAIT +':'+')+p,life:.75,col:perfect?C.cyanL:C.greenL});
         burst(cx,mouthY,C.redH,perfect?14:8);
         ripple(cx,mouthY,perfect?C.cyanL:C.red,perfect?48:30);
-        if(perfect) punch=Math.max(punch,.5);
+        if(perfect){ punch=Math.max(punch,.5); perfectCount++; }
+        if(lives===1&&score>=100) clutch=true;
         if(combo%8===0){ goldFlash=Math.max(goldFlash,.5); shake=Math.max(shake,4);
           banner('COMBO x'+combo+'   ·   ×'+comboMult(),C.gold);
           ripple(cx,mouthY,C.gold,72); burst(cx,mouthY-10,C.gold,18); }
@@ -609,11 +672,19 @@ function update(dt){
         if(best>0 && !newRecordShown && score>best){ newRecordShown=true;
           banner('NOUVEAU RECORD !',C.cyanL); ripple(W/2,H*0.45,C.cyanL,W*1.2); }
       }
-      else if(e.type==='virus'){ lives--; combo=0; comboT=0; shake=11; flash=.85;
+      else if(e.type==='virus'){ lives--; virusHits++; combo=0; comboT=0; shake=11; flash=.85;
         floats.push({x:cx,y:mouthY-8,txt:'-1',life:.8,col:C.redH});
         burst(cx,mouthY,C.viro,14); ripple(cx,mouthY,C.viro,50); punch=Math.max(punch,.6); }
-      else if(e.type==='gold'){ frenzyTimer=(DM&&DM.frenzy)||5; goldFlash=.9; shake=Math.max(shake,5);
+      else if(e.type==='gold'){ goldCount++; frenzyTimer=(DM&&DM.frenzy)||5; goldFlash=.9; shake=Math.max(shake,5);
         banner('PLUIE DE GOUTTES !',C.gold); ripple(cx,mouthY,C.gold,W*1.3); burst(cx,mouthY,C.gold,24); }
+      else if(e.type==='crystal'){
+        score+=50; crystalCaught=true; slowT=1.3; punch=1; shake=Math.max(shake,8);
+        goldFlash=Math.max(goldFlash,.6);
+        banner('GOUTTE CRISTAL !',C.cyanL,'+50 points');
+        ripple(cx,mouthY,C.cyanL,W*1.6); ripple(cx,mouthY,'#ffffff',W*0.9);
+        burst(cx,mouthY,'#ffffff',22); burst(cx,mouthY,C.cyanL,18);
+        floats.push({x:cx,y:mouthY-8,txt:'+50',life:1.1,col:C.cyanL});
+      }
       else { applyBonus(e.sub,cx,mouthY);
         const bc=e.sub==='life'?C.greenL:e.sub==='wide'?C.cyanL:C.gold;
         burst(cx,mouthY,bc,12); ripple(cx,mouthY,bc,44); }
@@ -623,6 +694,23 @@ function update(dt){
   items=items.filter(e=>!e.dead);
   if(lives<=0){ lastScore=score; lastDrops=dropsCaught;
     if(combo>comboBest)comboBest=combo;
+    // progression du joueur : total de gouttes et badges
+    myDrops+=dropsCaught;
+    unlock('first');
+    if(score>=100) unlock('c100');
+    if(score>=250) unlock('c250');
+    if(level>=15) unlock('lvl15');
+    if(comboBest>=20) unlock('combo20');
+    if(perfectCount>=10) unlock('perf10');
+    if(goldCount>=5) unlock('gold5');
+    if(crystalCaught) unlock('crystal');
+    if(virusHits===0&&dropsCaught>=30) unlock('novirus');
+    if(clutch) unlock('clutch');
+    if(dailyMode) unlock('defi1');
+    if(Object.keys(defisJoues).length>=DEFIS.length) unlock('defi7');
+    if(myDrops>=500) unlock('d500');
+    if(myDrops>=2000) unlock('d2000');
+    saveProg();
     recordBeaten=!dailyMode&&score>best;
     if(recordBeaten){ best=score; try{ localStorage.setItem('bioxa_best',String(best)); }catch(e){} }
     state='OVER'; showEntry(); }
@@ -679,7 +767,7 @@ function drawBackground(t){
   // L'horizon se place dans un espace libre selon l'écran affiché, pour que la
   // ligne néon ne vienne jamais barrer un texte.
   const city=(state==='PLAY'||state==='TITLE');
-  const hz=state==='PLAY'?H*0.42:state==='TITLE'?H*0.655:H*0.30;
+  const hz=state==='PLAY'?H*0.42:state==='TITLE'?H*0.638:H*0.30;
   ctx.drawImage(baseLayer(),0,0,W,H);
   if(city) ctx.drawImage(skyStrip(),0,hz-SKY_BAND,W,SKY_BAND);
   // grille en perspective
@@ -759,6 +847,7 @@ function render(){
   drawDust(t);
   if(state==='INTRO')renderIntro();
   else if(state==='TITLE')renderTitle();
+  else if(state==='BADGES')renderBadges();
   else if(state==='FILL')renderFill();
   else if(state==='BOARD')renderBoard(); else renderPlay();
   ripples.forEach(o=>{ const a=Math.max(0,o.life); ctx.save(); ctx.strokeStyle=o.col;
@@ -774,6 +863,7 @@ function render(){
   ctx.restore();
   if(flash>0){ ctx.fillStyle='rgba(225,29,72,'+(flash*0.32)+')'; ctx.fillRect(0,0,W,H); }
   if(goldFlash>0){ ctx.fillStyle='rgba(251,191,36,'+(goldFlash*0.26)+')'; ctx.fillRect(0,0,W,H); }
+  if(slowT>0){ ctx.fillStyle='rgba(125,249,255,'+(Math.min(1,slowT)*0.13)+')'; ctx.fillRect(0,0,W,H); }
 }
 function renderHUD(){
   const g=ctx.createLinearGradient(0,0,0,34);
@@ -800,6 +890,19 @@ function renderPlay(){
   for(const e of items){
     if(e.type==='blood'){ trail(e,'rgba(225,29,72,.55)'); drawDrop(e.x,e.y,3); }
     else if(e.type==='virus') drawVirus(e.x,e.y,3);
+    else if(e.type==='crystal'){
+      trail(e,'rgba(125,249,255,.7)');
+      const cx0=e.x+e.w/2, cy0=e.y+e.h/2, pu=.45+.3*Math.sin(now/70);
+      ctx.save(); const g=ctx.createRadialGradient(cx0,cy0,0,cx0,cy0,e.w*1.9);
+      g.addColorStop(0,'rgba(125,249,255,'+(0.30+0.4*pu)+')'); g.addColorStop(1,'rgba(125,249,255,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx0,cy0,e.w*1.9,0,6.283); ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,'+pu+')'; ctx.lineWidth=1.2;  // éclats scintillants
+      for(let k=0;k<4;k++){ const a=now/420+k*Math.PI/4, R=e.w*(1.1+0.35*pu);
+        ctx.beginPath(); ctx.moveTo(cx0+Math.cos(a)*R*0.45,cy0+Math.sin(a)*R*0.45);
+        ctx.lineTo(cx0+Math.cos(a)*R,cy0+Math.sin(a)*R); ctx.stroke(); }
+      ctx.restore();
+      drawDrop(e.x,e.y,3,2);
+    }
     else if(e.type==='gold'){
       trail(e,'rgba(251,191,36,.6)');
       const pu=.30+.22*Math.sin(now/90), cx0=e.x+e.w/2, cy0=e.y+e.h/2, R=e.w*1.35;
@@ -906,18 +1009,18 @@ function renderTitle(){
   text(dj.desc,W/2,DEFI_BTN.y+26,7.5,C.muted,'center',null,600,.2);
 
   // ---- carte "comment jouer" ----
-  fillRR(26,198,W-52,132,14,'rgba(8,14,34,.62)');
-  strokeRR(26,198,W-52,132,14,'rgba(34,211,238,.20)',1);
+  fillRR(26,194,W-52,126,14,'rgba(8,14,34,.62)');
+  strokeRR(26,194,W-52,126,14,'rgba(34,211,238,.20)',1);
   const ix=58, tx=84;
-  drawDrop (ix-9,216-10.5,3);      // à attraper
-  drawVirus(ix-12,247-12,3);       // à éviter
-  drawBonus(ix,278,'x2');          // bonus
-  drawDrop (ix-9,309-10.5,3,1);    // goutte en or
+  drawDrop (ix-9,210-10.5,3);      // à attraper
+  drawVirus(ix-12,239-12,3);       // à éviter
+  drawBonus(ix,268,'x2');          // bonus
+  drawDrop (ix-9,297-10.5,3,1);    // goutte en or
   const rows=[
-    [216,'À ATTRAPER'  ,'chaque goutte = 1 point'       ,C.cream],
-    [247,'À ÉVITER'    ,'le virus coûte une vie'        ,C.viroP],
-    [278,'BONUS'       ,'tube élargi · ×2 points · vie' ,C.cyanL],
-    [309,'GOUTTE EN OR','déclenche la pluie de gouttes' ,C.gold ],
+    [210,'À ATTRAPER'  ,'chaque goutte = 1 point'       ,C.cream],
+    [239,'À ÉVITER'    ,'le virus coûte une vie'        ,C.viroP],
+    [268,'BONUS'       ,'tube élargi · ×2 points · vie' ,C.cyanL],
+    [297,'GOUTTE EN OR','déclenche la pluie de gouttes' ,C.gold ],
   ];
   for(const rw of rows){
     text(rw[1],tx,rw[0]-5,10,rw[3],'left',null,800,1);
@@ -926,21 +1029,28 @@ function renderTitle(){
 
   // ---- appel à jouer (pulsation douce) ----
   ctx.save(); ctx.globalAlpha=.72+.28*Math.sin(performance.now()/380);
-  text('▶  TAPE POUR JOUER',W/2,352,16,'#ffffff','center',C.greenL,800,2); ctx.restore();
-  if(best>0) text('ton record : '+best,W/2,368,8.5,C.cyanL,'center',null,700,.6);
+  text('▶  TAPE POUR JOUER',W/2,348,16,'#ffffff','center',C.greenL,800,2); ctx.restore();
+  // ---- grade de donneur + record ----
+  const G=GRADES[gradeIdx()];
+  text(G.nom,W/2,366,9,G.c,'center',G.c,800,1.2);
+  text(best>0?('record : '+best+'  ·  '+myDrops+' gouttes au total')
+             :(myDrops+' gouttes au total'),W/2,378,7.5,C.muted,'center',null,600,.3);
 
-  // ---- classement partagé ----
-  fillRR(BOARD_BTN.x,BOARD_BTN.y,BOARD_BTN.w,BOARD_BTN.h,BOARD_BTN.h/2,'rgba(34,211,238,.10)');
-  strokeRR(BOARD_BTN.x,BOARD_BTN.y,BOARD_BTN.w,BOARD_BTN.h,BOARD_BTN.h/2,'rgba(34,211,238,.65)',1,C.cyan);
-  text('VOIR LE CLASSEMENT',W/2,BOARD_BTN.y+BOARD_BTN.h/2,10,C.cyanL,'center',null,700,1.5);
+  // ---- classement + badges ----
+  for(const bt of [[BOARD_BTN,'CLASSEMENT'],[BADGE_BTN,'BADGES '+badgeCount()+'/'+BADGES.length]]){
+    const b=bt[0];
+    fillRR(b.x,b.y,b.w,b.h,b.h/2,'rgba(34,211,238,.10)');
+    strokeRR(b.x,b.y,b.w,b.h,b.h/2,'rgba(34,211,238,.6)',1,C.cyan);
+    text(bt[1],b.x+b.w/2,b.y+b.h/2,9,C.cyanL,'center',null,700,1);
+  }
 
   // ---- sang collecté par tous les joueurs ----
   const litT=totalDrops*0.00005, pT=Math.floor(totalDrops/POCHE_DROPS);
-  fillRR(34,418,W-68,36,12,'rgba(225,29,72,.10)');
-  strokeRR(34,418,W-68,36,12,'rgba(255,77,109,.32)',1);
-  text('SANG COLLECTÉ ENSEMBLE',W/2,429,7.5,C.redH,'center',null,700,1.4);
+  fillRR(34,424,W-68,34,12,'rgba(225,29,72,.10)');
+  strokeRR(34,424,W-68,34,12,'rgba(255,77,109,.32)',1);
+  text('SANG COLLECTÉ ENSEMBLE',W/2,434,7,C.redH,'center',null,700,1.4);
   text(litT.toFixed(2).replace('.',',')+' L   ·   '+pT+' POCHE'+(pT>1?'S':''),
-       W/2,444,12,'#ffffff','center',C.red,800,.8);
+       W/2,448,11,'#ffffff','center',C.red,800,.8);
 
   // ---- pied de page ----
   const iy=INFO_BTN.y+INFO_BTN.h/2;
@@ -1053,6 +1163,40 @@ function renderFill(){
   if(bp>0){ ctx.save(); ctx.globalAlpha=bp*(.65+.35*Math.sin(now*3));
     text('toucher pour voir le classement',W/2,442,9,C.cyanL,'center',null,700,.5); ctx.restore(); }
 }
+// ===== ÉCRAN DES BADGES =====
+function renderBadges(){
+  const got=badgeCount();
+  drawLogo(W/2,8,30);
+  text('MES BADGES',W/2,58,15,'#ffffff','center',C.cyan,800,2);
+  text(got+' / '+BADGES.length+' débloqués',W/2,76,8.5,C.muted,'center',null,700,.8);
+  // grade de donneur
+  const gi=gradeIdx(), G=GRADES[gi];
+  const lbl='GRADE : '+G.nom;
+  ctx.font='800 9px '+FS; const tw=ctx.measureText(lbl).width+26;
+  fillRR(W/2-tw/2,88,tw,19,9.5,'rgba(255,255,255,.06)');
+  strokeRR(W/2-tw/2,88,tw,19,9.5,G.c,1,G.c);
+  text(lbl,W/2,98,9,G.c,'center',null,800,1);
+  // grille 4 × 4
+  const gx=24, gy=118, cw=(W-48)/4, ch=76;
+  BADGES.forEach((b,i)=>{
+    const cx=gx+cw*(i%4)+cw/2, cy=gy+ch*Math.floor(i/4), on=!!badges[b.k];
+    ctx.save(); ctx.globalAlpha=on?1:.30;
+    fillRR(cx-18,cy,36,36,10,on?'rgba(255,255,255,.10)':'rgba(255,255,255,.04)');
+    strokeRR(cx-18,cy,36,36,10,on?b.c||C.cyanL:'rgba(138,160,200,.45)',1,on?(b.c||C.cyanL):null);
+    text(on?b.s:'?',cx,cy+18,on&&b.s.length>2?11:14,on?(b.c||C.cyanL):C.muted,'center',null,800,0);
+    text(b.n,cx,cy+48,6.5,on?C.cream:C.muted,'center',null,700,.2);
+    ctx.restore();
+  });
+  // prochain objectif
+  const nx=nextBadge();
+  if(nx){ fillRR(24,432,W-48,40,12,'rgba(34,211,238,.07)');
+    strokeRR(24,432,W-48,40,12,'rgba(34,211,238,.28)',1);
+    text('PROCHAIN BADGE : '+nx.n,W/2,445,8,C.cyanL,'center',null,800,1);
+    text(nx.d,W/2,459,7.5,C.muted,'center',null,600,.2); }
+  else text('Collection complète — bravo !',W/2,450,10,C.greenL,'center',C.green,800,.6);
+  if(Math.floor(performance.now()/500)%2===0)
+    text('toucher pour revenir',W/2,H-14,8,C.muted,'center',null,600,.4);
+}
 function renderBoard(){
   drawLogo(W/2,6,26);
   // onglets : cette semaine / tous les temps (idée 8)
@@ -1070,8 +1214,11 @@ function renderBoard(){
   rows.slice(0,8).forEach((e,i)=>{ const y=112+i*29, hot=(e.name===lastName&&e.score===lastScore);
     if(hot){ fillRR(20,y-12,W-40,24,7,'rgba(190,242,100,.10)');
              strokeRR(20,y-12,W-40,24,7,'rgba(190,242,100,.45)',1,C.green); }
-    text(String(i+1),32,y,11,i<3?C.gold:C.muted,'center',i<3?C.gold:null,800,0);
-    text(e.name,52,y,12,hot?C.greenL:C.cream,'left',null,700,1.2);
+    text(String(i+1),30,y,11,i<3?C.gold:C.muted,'center',i<3?C.gold:null,800,0);
+    const gc=GRADES[Math.max(0,Math.min(GRADES.length-1,e.g|0))].c;  // pastille de grade
+    ctx.save(); ctx.globalAlpha=(e.g|0)?1:.35; ctx.fillStyle=gc;
+    ctx.beginPath(); ctx.arc(46,y,3.2,0,6.283); ctx.fill(); ctx.restore();
+    text(e.name,56,y,12,hot?C.greenL:C.cream,'left',null,700,1.2);
     text(String(e.score),W-30,y,13,hot?C.greenL:C.cyanL,'right',null,800,0); });
   // sang collecté + poches remplies ensemble
   const litres=totalDrops*0.00005;
@@ -1111,8 +1258,10 @@ function showEntry(){
     'Bravo ! Vous avez collecté l\'équivalent de '+lStr+' L de sang (soit '+mlStr+' mL).<br>'+
     'Ensemble, tous joueurs confondus : '+totL+' L !<br>'+
     'Le don du sang est primordial, pensez-y !';
-  document.getElementById('statMsg').textContent=
-    lastDrops+' gouttes attrapées  ·  meilleur combo x'+comboBest;
+  document.getElementById('statMsg').innerHTML=
+    lastDrops+' gouttes attrapées  ·  meilleur combo x'+comboBest+
+    '<br><span style="color:#22d3ee">grade : '+GRADES[gradeIdx()].nom+'</span>'+
+    (newBadges.length?'<br><span style="color:#fbbf24">🏅 nouveau badge : '+newBadges.join(', ')+'</span>':'');
   entry.style.display='flex'; nameIn.focus(); nameIn.select();
 }
 async function submitScore(){
@@ -1124,6 +1273,11 @@ async function submitScore(){
     totalDrops=d.total;
     fillT=0; fillBefore=before; fillAfter=d.total;
     bagDone=Math.floor(d.total/POCHE_DROPS)>Math.floor(before/POCHE_DROPS);
+    if(bagDone) unlock('bag');
+    const cl=(dailyMode?dayBoard:weekBoard)||[];
+    if(cl.findIndex(e=>e.name===lastName&&e.score===lastScore)>=0&&
+       cl.findIndex(e=>e.name===lastName&&e.score===lastScore)<3) unlock('top3');
+    saveProg();
     pickFact();
     state='FILL';
   } else state='BOARD';
@@ -1151,7 +1305,7 @@ async function lbSave(name,score,drops){
   try{
     const r=await fetch('/api/leaderboard',{method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,score:score,drops:drops,daily:dailyMode})});
+      body:JSON.stringify({name:name,score:score,drops:drops,daily:dailyMode,grade:gradeIdx()})});
     return normalizeLB(await r.json());
   }catch(e){ return {board:[],total:0}; }
 }

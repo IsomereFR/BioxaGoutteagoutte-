@@ -42,6 +42,13 @@ Mécaniques de jeu :
   apparition après 14 s sans en voir — sinon beaucoup de parties se terminaient
   sans que le joueur découvre la mécanique.
 - **Paliers** (25, 50, 100, 200, 400 points) et **record personnel** célébrés à l'écran.
+- **Goutte cristal** : très rare (environ une partie sur douze, une seule par
+  partie). Elle tombe lentement, scintille, et l'attraper vaut **+50 points**
+  avec un ralenti et un voile bleuté.
+- **16 badges à débloquer** (écran « Mes badges » depuis l'accueil) et un
+  **grade de donneur** qui monte avec le total de gouttes collectées :
+  Apprenti → Donneur → Donneur régulier → Donneur héroïque → Légende Bioxa.
+  Le grade apparaît en pastille colorée à côté du pseudo dans le classement.
 - **Défi du jour** : une règle spéciale, **la même pour tous**, qui change chaque
   jour (tube fin, chute libre, une seule vie, invasion, ruée vers l'or, précision,
   marathon). Il a son **propre classement**, remis à zéro chaque jour. Les scores du
@@ -111,8 +118,10 @@ qui accompagne ce projet, ou ci-dessous en version courte.
 Le jeu enregistre uniquement un **pseudo** (saisi par le joueur, sans son vrai nom),
 un **score** et la **semaine** de jeu, pour faire fonctionner le classement partagé.
 Il n'y a **aucun cookie publicitaire**, aucun traceur, aucune donnée de santé.
-Le **record personnel** est gardé dans le navigateur du joueur (stockage local)
-et n'est jamais envoyé au serveur.
+La **progression** (record, badges, grade, total de gouttes) est gardée dans le
+navigateur du joueur (stockage local) et n'est jamais envoyée au serveur — à une
+exception près : le numéro du grade (0 à 4) accompagne le score pour être affiché
+dans le classement.
 
 - Une page **« Infos & confidentialité »** est accessible depuis l'accueil du jeu.
 - Le classement de la semaine est **effacé automatiquement** chaque semaine.

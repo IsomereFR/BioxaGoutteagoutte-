@@ -154,7 +154,11 @@ module.exports = async (req, res) => {
       // Une partie du DÉFI DU JOUR suit des règles spéciales : son score ne va
       // que dans le classement du jour, sinon la comparaison serait faussée.
       const daily = body.daily === true;
-      const entry = { name, score };
+      // Grade de donneur : un simple entier 0-4, calculé sur l'appareil du joueur.
+      let grade = parseInt(body.grade, 10);
+      if (!Number.isFinite(grade)) grade = 0;
+      grade = Math.max(0, Math.min(4, grade));
+      const entry = { name, score, g: grade };
       let list, week, day;
       if (daily) {
         day = await pushTop10(dKey, entry, TTL_DAY);

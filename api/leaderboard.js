@@ -1,7 +1,6 @@
 // API du classement partagé "Goutte à Goutte"
 // Lit / écrit dans une base Upstash Redis (gratuite) :
-//   - le top 10 "tous les temps"
-//   - le top 10 "de la semaine" (remis à zéro chaque semaine, automatiquement)
+//   - le top 20 "tous les temps" (un seul score par pseudo : le meilleur)
 //   - le total de gouttes collectées par tous les joueurs
 //
 // Deux variables d'environnement sont nécessaires (à définir sur Vercel) :
@@ -10,7 +9,8 @@
 
 const REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
-const KEY = 'bioxa_goutte_lb_v1';          // top 10 tous les temps (JSON)
+const KEY = 'bioxa_goutte_lb_v1';          // top 20 tous les temps (JSON)
+const BOARD_MAX = 20;                      // nombre de places au classement
 const TOTAL_KEY = 'bioxa_goutte_total_v1'; // total de gouttes collectées, tous joueurs
 
 // Gouttes déjà attrapées avant la mise en place du compteur partagé.
@@ -55,30 +55,6 @@ function cleanName(raw) {
   return name;
 }
 
-// Numéro de semaine ISO (ex. "2026_27"), pour la clé du classement hebdomadaire.
-function isoWeekId(d) {
-  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const dayNum = (date.getUTCDay() + 6) % 7;            // lundi = 0
-  date.setUTCDate(date.getUTCDate() - dayNum + 3);      // jeudi de la semaine
-  const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
-  const week = 1 + Math.round(
-    ((date - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7
-  );
-  return date.getUTCFullYear() + '_' + String(week).padStart(2, '0');
-}
-function weekKeyNow() {
-  return 'bioxa_goutte_lb_week_' + isoWeekId(new Date());
-}
-// Clé du DÉFI DU JOUR. Le jour est calculé en temps universel, comme dans le jeu,
-// pour que tout le monde ait le même défi et le même classement au même moment.
-function dayKeyNow() {
-  const d = new Date();
-  const iso = d.getUTCFullYear() + '-' +
-    String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getUTCDate()).padStart(2, '0');
-  return 'bioxa_goutte_lb_day_' + iso;
-}
-
 // Envoie une commande Redis via l'API REST d'Upstash.
 async function redis(command) {
   const res = await fetch(REST_URL, {
@@ -94,47 +70,52 @@ async function redis(command) {
   return data.result;
 }
 
-// Ajoute une entrée dans une liste "top 10" (triée par score décroissant).
-async function pushTop10(key, entry, ttl) {
+// Trie par score décroissant, ne garde que le MEILLEUR score de chaque pseudo,
+// et coupe aux 20 premières places. Les anciens classements, qui pouvaient
+// contenir plusieurs fois le même pseudo, sont donc nettoyés au passage.
+function rank(list) {
+  const best = [];
+  const seen = new Set();
+  for (const e of (list || []).slice().sort((a, b) => b.score - a.score)) {
+    const name = String((e && e.name) || '');
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    best.push(e);
+    if (best.length >= BOARD_MAX) break;
+  }
+  return best;
+}
+
+// Ajoute une entrée au classement et renvoie le nouveau top 20.
+async function pushBoard(key, entry) {
   const raw = await redis(['GET', key]);
-  let list = raw ? JSON.parse(raw) : [];
-  list.push(entry);
-  list.sort((a, b) => b.score - a.score);
-  list = list.slice(0, 10);
-  // Les classements temporaires s'effacent tout seuls : rien à nettoyer à la main.
-  await redis(ttl ? ['SET', key, JSON.stringify(list), 'EX', String(ttl)]
-                  : ['SET', key, JSON.stringify(list)]);
+  const list = rank((raw ? JSON.parse(raw) : []).concat([entry]));
+  await redis(['SET', key, JSON.stringify(list)]);
   return list;
 }
-const TTL_DAY = 4 * 86400, TTL_WEEK = 40 * 86400;
 
 module.exports = async (req, res) => {
   // Si les clés Upstash ne sont pas configurées, on renvoie un état vide
   // au lieu de planter (le jeu reste jouable).
   if (!REST_URL || !REST_TOKEN) {
-    res.status(200).json({ board: [], week: [], day: [], total: 0 });
+    res.status(200).json({ board: [], total: 0 });
     return;
   }
 
   try {
-    const wKey = weekKeyNow(), dKey = dayKeyNow();
-
-    // GET : lire les trois classements + le total de sang collecté
+    // GET : lire le classement + le total de sang collecté
     if (req.method === 'GET') {
       const rawList = await redis(['GET', KEY]);
-      const rawWeek = await redis(['GET', wKey]);
-      const rawDay = await redis(['GET', dKey]);
       const rawTotal = await redis(['GET', TOTAL_KEY]);
       res.status(200).json({
-        board: rawList ? JSON.parse(rawList) : [],
-        week: rawWeek ? JSON.parse(rawWeek) : [],
-        day: rawDay ? JSON.parse(rawDay) : [],
+        // rank() ici aussi : l'affichage est propre même avant la prochaine écriture
+        board: rank(rawList ? JSON.parse(rawList) : []),
         total: SEED_DROPS + (parseInt(rawTotal, 10) || 0),
       });
       return;
     }
 
-    // POST : ajouter un score aux deux classements, incrémenter le total
+    // POST : ajouter un score au classement, incrémenter le total
     if (req.method === 'POST') {
       let body = req.body;
       if (typeof body === 'string') body = JSON.parse(body || '{}');
@@ -151,9 +132,6 @@ module.exports = async (req, res) => {
       if (!Number.isFinite(drops)) drops = score; // anciennes versions du jeu
       drops = Math.max(0, Math.min(score, drops));
 
-      // Une partie du DÉFI DU JOUR suit des règles spéciales : son score ne va
-      // que dans le classement du jour, sinon la comparaison serait faussée.
-      const daily = body.daily === true;
       // Grade de donneur : un simple entier 0-4, calculé sur l'appareil du joueur.
       let grade = parseInt(body.grade, 10);
       if (!Number.isFinite(grade)) grade = 0;
@@ -163,23 +141,11 @@ module.exports = async (req, res) => {
       const role = body.role === 'B' || body.role === 'P' ? body.role : '';
       const entry = { name, score, g: grade };
       if (role) entry.r = role;
-      let list, week, day;
-      if (daily) {
-        day = await pushTop10(dKey, entry, TTL_DAY);
-        list = JSON.parse((await redis(['GET', KEY])) || '[]');
-        week = JSON.parse((await redis(['GET', wKey])) || '[]');
-      } else {
-        list = await pushTop10(KEY, entry);
-        week = await pushTop10(wKey, entry, TTL_WEEK);
-        day = JSON.parse((await redis(['GET', dKey])) || '[]');
-      }
-      // Le sang collecté compte dans les deux cas : une goutte reste une goutte.
+      const list = await pushBoard(KEY, entry);
       const total = await redis(['INCRBY', TOTAL_KEY, drops]);
 
       res.status(200).json({
         board: list,
-        week,
-        day,
         total: SEED_DROPS + (parseInt(total, 10) || 0),
       });
       return;
@@ -188,6 +154,6 @@ module.exports = async (req, res) => {
     res.status(405).json({ error: 'Méthode non autorisée' });
   } catch (e) {
     // En cas d'erreur réseau/base, on renvoie un état vide pour ne pas casser le jeu.
-    res.status(200).json({ board: [], week: [], day: [], total: 0 });
+    res.status(200).json({ board: [], total: 0 });
   }
 };

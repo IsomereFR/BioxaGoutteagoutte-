@@ -75,9 +75,8 @@ différente à chaque partie. Ces repères viennent de la communication publique
 le don ; ils sont regroupés dans la liste `FACTS` de `index.html` — **à faire
 valider par votre service communication** avant diffusion, et faciles à modifier.
 
-L'**écran d'accueil affiche le podium** : le **Top 3** de la semaine (ou de tous
-les temps tant que la semaine est vide), avec la pastille P/B de chaque joueur.
-Toucher l'encart ouvre le classement complet.
+L'**écran d'accueil affiche le podium** : le **Top 3 de tous les temps**, avec la
+pastille P/B de chaque joueur. Toucher l'encart ouvre le classement complet.
 
 Le classement est **consultable à tout moment** depuis le menu (bouton
 « VOIR LE CLASSEMENT »), avec deux onglets : **Cette semaine** et **Tous les

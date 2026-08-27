@@ -1047,25 +1047,20 @@ function neonTitle(s,x,y,sz){
   text(s,x,y,sz,'#ffffff','center',C.mag,800,2.5);
 }
 // ---- TOP 3 de l'accueil ----
-// On montre le classement de la semaine, celui qui bouge le plus ; tant qu'il est
-// vide (début de semaine), on retombe sur celui de tous les temps.
-function homeTop3(){
-  if(weekBoard&&weekBoard.length) return {rows:weekBoard,label:'CETTE SEMAINE'};
-  if(board&&board.length)         return {rows:board,    label:'TOUS LES TEMPS'};
-  return {rows:[],label:'CETTE SEMAINE'};
-}
+// Toujours le classement de TOUS LES TEMPS : le podium de l'accueil reste le même
+// repère d'une semaine à l'autre.
 const MEDAL=['#fbbf24','#dbe3f0','#e08a4c'];  // or, argent, bronze
 function drawTop3(){
-  const b=TOP3_BTN, t3=homeTop3();
+  const b=TOP3_BTN, rows=board||[];
   fillRR(b.x,b.y,b.w,b.h,12,'rgba(8,14,34,.66)');      // même fond que la carte du dessus
   fillRR(b.x,b.y,b.w,b.h,12,'rgba(251,191,36,.07)');   // + teinte dorée
   strokeRR(b.x,b.y,b.w,b.h,12,'rgba(251,191,36,.32)',1);
-  text('TOP 3  ·  '+t3.label,W/2,b.y+13,7.5,C.gold,'center',null,800,1.4);
-  if(!t3.rows.length){
+  text('TOP 3  ·  TOUS LES TEMPS',W/2,b.y+13,7.5,C.gold,'center',null,800,1.4);
+  if(!rows.length){
     text('Personne au classement — sois le premier !',W/2,b.y+38,8.5,C.muted,'center',null,600,.2);
     return;
   }
-  t3.rows.slice(0,3).forEach((e,i)=>{
+  rows.slice(0,3).forEach((e,i)=>{
     const y=b.y+29+i*14, nm=String(e.name||'---');
     text(String(i+1),b.x+14,y,9,MEDAL[i],'center',i===0?C.gold:null,800,0);
     text(nm,b.x+26,y,10,i===0?'#ffffff':C.cream,'left',null,700,.6);

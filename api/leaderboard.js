@@ -158,7 +158,11 @@ module.exports = async (req, res) => {
       let grade = parseInt(body.grade, 10);
       if (!Number.isFinite(grade)) grade = 0;
       grade = Math.max(0, Math.min(4, grade));
+      // Repère choisi par le joueur avant la saisie : 'B' (Bioxa) ou 'P' (patient·e).
+      // Toute autre valeur est ignorée : le classement n'affiche alors aucune lettre.
+      const role = body.role === 'B' || body.role === 'P' ? body.role : '';
       const entry = { name, score, g: grade };
+      if (role) entry.r = role;
       let list, week, day;
       if (daily) {
         day = await pushTop10(dKey, entry, TTL_DAY);

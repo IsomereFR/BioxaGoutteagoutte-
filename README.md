@@ -59,7 +59,13 @@ Mécaniques de jeu :
 > Le score peut être multiplié par les combos, mais le **sang collecté se compte
 > en gouttes réellement attrapées** — le compteur collectif reste donc exact.
 
-**Fin de partie** : après avoir validé son pseudo, le joueur voit une **poche de
+**Fin de partie** : le jeu demande d'abord si le joueur est **Patient(e)** ou
+**Bioxa**. Ce choix ajoute un **P** ou un **B** en pastille à côté de son pseudo dans
+le classement (il est mémorisé sur l'appareil et simplement remis en avant la fois
+suivante, jamais imposé). Vient ensuite la saisie du pseudo : le champ est **vide**,
+rien n'est pré-inscrit, et la validation demande au moins un caractère.
+
+Après avoir validé son pseudo, le joueur voit une **poche de
 don (450 mL) se remplir** à l'écran jusqu'au niveau atteint collectivement, puis
 sa contribution personnelle en mL. Si la poche se complète, elle est célébrée
 avant qu'une nouvelle commence.
@@ -68,6 +74,10 @@ Un encart **« Le saviez-vous ? »** y affiche une information sur le don du san
 différente à chaque partie. Ces repères viennent de la communication publique sur
 le don ; ils sont regroupés dans la liste `FACTS` de `index.html` — **à faire
 valider par votre service communication** avant diffusion, et faciles à modifier.
+
+L'**écran d'accueil affiche le podium** : le **Top 3** de la semaine (ou de tous
+les temps tant que la semaine est vide), avec la pastille P/B de chaque joueur.
+Toucher l'encart ouvre le classement complet.
 
 Le classement est **consultable à tout moment** depuis le menu (bouton
 « VOIR LE CLASSEMENT »), avec deux onglets : **Cette semaine** et **Tous les
@@ -116,7 +126,8 @@ qui accompagne ce projet, ou ci-dessous en version courte.
 ## Confidentialité (RGPD)
 
 Le jeu enregistre uniquement un **pseudo** (saisi par le joueur, sans son vrai nom),
-un **score** et la **semaine** de jeu, pour faire fonctionner le classement partagé.
+la lettre **P** (patient·e) ou **B** (Bioxa) choisie avant la saisie, un **score** et
+la **semaine** de jeu, pour faire fonctionner le classement partagé.
 Il n'y a **aucun cookie publicitaire**, aucun traceur, aucune donnée de santé.
 La **progression** (record, badges, grade, total de gouttes) est gardée dans le
 navigateur du joueur (stockage local) et n'est jamais envoyée au serveur — à une

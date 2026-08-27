@@ -11,6 +11,19 @@ const REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 const KEY = 'bioxa_goutte_lb_v1';          // top 20 tous les temps (JSON)
 const BOARD_MAX = 20;                      // nombre de places au classement
+
+// Repères affichés à côté de certains pseudos, attribués à la main.
+// Ils s'appliquent aussi aux scores enregistrés AVANT la question
+// « Patient(e) ou Bioxa ? », et ont priorité sur le choix fait dans le jeu.
+// Pour changer une pastille : une ligne à ajouter, modifier ou retirer ici.
+// (Les pseudos sont comparés en majuscules, sans accent ni ponctuation.)
+const ROLE_BY_NAME = {
+  MARGOT: 'B',
+  LOLO: 'B',
+  WOLPHAI: 'P',
+  DOFLAMIN: 'P',
+  LPB: '🎤',
+};
 const TOTAL_KEY = 'bioxa_goutte_total_v1'; // total de gouttes collectées, tous joueurs
 
 // Gouttes déjà attrapées avant la mise en place du compteur partagé.
@@ -86,6 +99,15 @@ function rank(list) {
   return best;
 }
 
+// Applique ROLE_BY_NAME juste avant l'envoi : ce qui est stocké dans la base
+// reste le choix réel du joueur, seul l'affichage est corrigé.
+function withRoles(list) {
+  return (list || []).map((e) => {
+    const fix = ROLE_BY_NAME[String((e && e.name) || '')];
+    return fix ? Object.assign({}, e, { r: fix }) : e;
+  });
+}
+
 // Ajoute une entrée au classement et renvoie le nouveau top 20.
 async function pushBoard(key, entry) {
   const raw = await redis(['GET', key]);
@@ -109,7 +131,7 @@ module.exports = async (req, res) => {
       const rawTotal = await redis(['GET', TOTAL_KEY]);
       res.status(200).json({
         // rank() ici aussi : l'affichage est propre même avant la prochaine écriture
-        board: rank(rawList ? JSON.parse(rawList) : []),
+        board: withRoles(rank(rawList ? JSON.parse(rawList) : [])),
         total: SEED_DROPS + (parseInt(rawTotal, 10) || 0),
       });
       return;
@@ -145,7 +167,7 @@ module.exports = async (req, res) => {
       const total = await redis(['INCRBY', TOTAL_KEY, drops]);
 
       res.status(200).json({
-        board: list,
+        board: withRoles(list),
         total: SEED_DROPS + (parseInt(total, 10) || 0),
       });
       return;

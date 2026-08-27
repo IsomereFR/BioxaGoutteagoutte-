@@ -31,11 +31,11 @@
                inset 0 0 50px rgba(0,0,0,.55),0 20px 50px rgba(0,0,0,.65)}
   #scan{position:absolute;inset:0;pointer-events:none;border-radius:16px;
     background:radial-gradient(125% 95% at 50% 42%,transparent 52%,rgba(2,3,10,.55) 100%)}
-  #entry{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
-    gap:2.4vh;border-radius:16px;background:rgba(5,8,20,.92);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:7%}
-  #entry h2{font-size:clamp(13px,4.2vh,22px);letter-spacing:2px;color:var(--cyanL);text-transform:uppercase;
+  #entry,#role{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:1.9vh;border-radius:16px;background:rgba(5,8,20,.92);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:7%}
+  #entry h2,#role h2{font-size:clamp(13px,4.2vh,22px);letter-spacing:2px;color:var(--cyanL);text-transform:uppercase;
     text-align:center;text-shadow:0 0 16px rgba(34,211,238,.75)}
-  #entry p{font-size:clamp(10px,2.3vh,13px);line-height:1.5;color:#c3d2ee;text-align:center}
+  #entry p,#role p{font-size:clamp(10px,2.3vh,13px);line-height:1.5;color:#c3d2ee;text-align:center}
   #nameIn{width:72%;text-align:center;text-transform:uppercase;letter-spacing:5px;font-family:inherit;font-weight:800;
     font-size:clamp(15px,4vh,26px);padding:11px;background:rgba(10,16,40,.9);color:var(--cyanL);
     border:1px solid rgba(34,211,238,.55);border-radius:10px;outline:none;
@@ -45,6 +45,27 @@
     padding:12px 30px;text-transform:uppercase;color:#04121a;border:none;border-radius:10px;
     background:linear-gradient(135deg,var(--cyanL),var(--cyan));box-shadow:0 0 24px rgba(34,211,238,.55)}
   #okBtn:active{transform:translateY(1px)}
+  #nameIn::placeholder{color:rgba(138,160,200,.55);font-weight:700;letter-spacing:3px}
+  /* message d'erreur : invisible tant qu'il est vide */
+  #entry p#nameErr{color:#ff6b8a;font-weight:700;font-size:clamp(9px,2vh,12px)}
+  #nameErr:empty{display:none}
+  #entry p#roleMsg{font-size:clamp(8px,1.8vh,11px);color:#8aa0c8}
+  #roleMsg b{color:var(--cyanL)}
+  #role p#roleScore{color:var(--greenL);font-weight:800;letter-spacing:1px}
+  #roleEdit{font-family:inherit;font-size:inherit;font-weight:700;color:var(--cyanL);background:none;border:none;
+    padding:0;text-decoration:underline;cursor:pointer}
+  /* fenêtre « Patient(e) ou Bioxa ? », affichée juste avant la saisie du pseudo */
+  .roleBtn{display:flex;align-items:center;gap:12px;width:78%;cursor:pointer;font-family:inherit;font-weight:800;
+    letter-spacing:1.5px;text-transform:uppercase;font-size:clamp(12px,3vh,17px);padding:13px 16px;
+    color:var(--cyanL);background:rgba(10,16,40,.9);border:1px solid rgba(34,211,238,.55);border-radius:12px;
+    box-shadow:0 0 18px rgba(34,211,238,.18)}
+  .roleBtn .tag{display:inline-flex;align-items:center;justify-content:center;flex:0 0 26px;height:26px;
+    border-radius:8px;font-size:14px;color:#04121a;background:linear-gradient(135deg,var(--cyanL),var(--cyan))}
+  .roleBtn[data-role="P"]{color:var(--greenL);border-color:rgba(190,242,100,.55);box-shadow:0 0 18px rgba(190,242,100,.18)}
+  .roleBtn[data-role="P"] .tag{color:#0b1a05;background:linear-gradient(135deg,var(--greenL),var(--green))}
+  .roleBtn.sel{border-width:2px;box-shadow:0 0 26px rgba(34,211,238,.45)}
+  .roleBtn[data-role="P"].sel{box-shadow:0 0 26px rgba(190,242,100,.45)}
+  .roleBtn:active{transform:translateY(1px)}
   #info{position:absolute;inset:0;display:none;flex-direction:column;border-radius:16px;
     background:rgba(4,6,16,.97);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
     padding:14px 16px 20px;overflow-y:auto;touch-action:pan-y;
@@ -70,8 +91,17 @@
     <p id="statMsg" style="color:#8aa0c8;font-size:clamp(9px,2vh,11px);letter-spacing:.5px"></p>
     <p>Tes initiales (3 à 8 lettres)</p>
     <p style="font-size:clamp(8px,1.8vh,11px);color:#4d7fd6">⚠️ N'utilise pas ton vrai nom — un pseudo suffit.</p>
-    <input id="nameIn" maxlength="8" value="BIO" autocomplete="off" spellcheck="false">
+    <input id="nameIn" maxlength="8" value="" placeholder="PSEUDO" autocomplete="off" spellcheck="false">
+    <p id="nameErr"></p>
     <button id="okBtn">Valider</button>
+    <p id="roleMsg">Tu joues en tant que <b id="roleWho">—</b> · <button id="roleEdit" type="button">changer</button></p>
+  </div>
+  <div id="role">
+    <p id="roleScore"></p>
+    <h2>Tu es&nbsp;?</h2>
+    <p>Choisis ton camp : la lettre correspondante s'affichera à côté de ton pseudo dans le classement.</p>
+    <button class="roleBtn" type="button" data-role="P"><span class="tag">P</span>Patient(e)</button>
+    <button class="roleBtn" type="button" data-role="B"><span class="tag">B</span>Bioxa</button>
   </div>
   <div id="info">
     <button class="closeBtn" id="closeInfo">✕ Fermer</button>
@@ -79,7 +109,7 @@
     <p>Petit jeu proposé par <b>Bioxa</b> pour patienter. « Quitte à patienter, autant le faire ensemble ! »</p>
 
     <h3>Données enregistrées</h3>
-    <p>Uniquement le <b>pseudo</b> que vous saisissez (merci de ne pas mettre votre vrai nom), votre <b>score</b> et la <b>semaine</b> de jeu. Ces informations servent à afficher le <b>classement partagé</b> et le total de gouttes collectées, communs à tous les joueurs.</p>
+    <p>Uniquement le <b>pseudo</b> que vous saisissez (merci de ne pas mettre votre vrai nom), la lettre <b>P</b> (patient·e) ou <b>B</b> (Bioxa) que vous choisissez avant la saisie, votre <b>score</b> et la <b>semaine</b> de jeu. Ces informations servent à afficher le <b>classement partagé</b> et le total de gouttes collectées, communs à tous les joueurs.</p>
 
     <h3>Ce que nous ne faisons pas</h3>
     <p>Aucun cookie publicitaire, aucun traceur, aucune donnée de santé. Le jeu ne demande ni compte, ni e-mail, ni identité.</p>
@@ -297,6 +327,24 @@ function text(s,x,y,sz,col,al,gl,w,ls){
   ctx.restore();
 }
 
+// largeur d'un texte, avec la même police que text() : sert à poser une pastille
+// juste après un pseudo, quelle que soit sa longueur
+function textW(s,sz,w,ls){
+  ctx.save(); ctx.font=(w||700)+' '+sz+'px '+FS;
+  try{ ctx.letterSpacing=(ls==null?sz*0.05:ls)+'px'; }catch(e){}
+  const m=ctx.measureText(s).width; ctx.restore(); return m;
+}
+// Pastille « P » (patient·e) ou « B » (Bioxa) affichée à côté du pseudo.
+// x = bord gauche, y = milieu. Renvoie la place occupée (0 si pas de repère).
+function roleChip(x,y,role,sz){
+  if(role!=='B'&&role!=='P') return 0;
+  const h=sz||11, w=h, col=role==='B'?C.cyanL:C.greenL;
+  fillRR(x,y-h/2,w,h,3.5,role==='B'?'rgba(34,211,238,.16)':'rgba(190,242,100,.16)');
+  strokeRR(x,y-h/2,w,h,3.5,col,1);
+  text(role,x+w/2,y+.4,h*0.66,col,'center',null,800,0);
+  return w+4;
+}
+
 // ---- sprites vectoriels (rendu réaliste / néon) ----
 const DW=6, DH=7, VW=8; // gabarits conservés : goutte 18×21 et virus 24×24 à s=3
 
@@ -405,6 +453,10 @@ let board=[], weekBoard=[], dayBoard=[], boardTab='all', lastScore=0, lastDrops=
 let fillT=0, fillBefore=0, fillAfter=0, bagDone=false; // animation de la poche
 // Record personnel : gardé dans le navigateur du joueur, jamais envoyé au serveur.
 let best=0; try{ best=parseInt(localStorage.getItem('bioxa_best'),10)||0; }catch(e){}
+// Repère choisi avant la saisie du pseudo : 'B' (Bioxa) ou 'P' (patient·e).
+// Mémorisé sur l'appareil pour préselectionner le même choix la fois suivante.
+let playerRole=''; try{ const pr=localStorage.getItem('bioxa_role');
+  if(pr==='B'||pr==='P') playerRole=pr; }catch(e){}
 
 // ===== PROGRESSION DU JOUEUR (gardée dans SON navigateur, jamais envoyée) =====
 // Grade de donneur : monte avec le total de gouttes collectées, toutes parties confondues.
@@ -529,14 +581,15 @@ function applyBonus(sub,x,y){
 }
 
 // ---- entrées ----
-const BOARD_BTN={x:22,y:390,w:126,h:26};      // bouton "CLASSEMENT" du menu
+const BOARD_BTN={x:22,y:416,w:126,h:26};      // bouton "CLASSEMENT" du menu
 const DEFI_BTN ={x:24,y:150,w:252,h:36};      // bandeau "DÉFI DU JOUR" (accueil)
-const BADGE_BTN={x:152,y:390,w:126,h:26};     // bouton "MES BADGES" (accueil)
+const BADGE_BTN={x:152,y:416,w:126,h:26};     // bouton "MES BADGES" (accueil)
+const TOP3_BTN ={x:26,y:296,w:W-52,h:64};     // encart "TOP 3" (accueil) → classement
 const TAB_DAY ={x:22,y:52,w:84,h:24};         // onglet "défi du jour"
 const TAB_WEEK={x:108,y:52,w:84,h:24};        // onglet "cette semaine"
 const TAB_ALL ={x:194,y:52,w:84,h:24};        // onglet "tous les temps"
 const REPLAY_BTN={x:W/2-70,y:428,w:140,h:30}; // bouton REJOUER (écran classement)
-const INFO_BTN={x:W/2-95,y:468,w:190,h:20};   // lien "infos & confidentialité" (accueil)
+const INFO_BTN={x:W/2-95,y:488,w:190,h:20};   // lien "infos & confidentialité" (accueil)
 const POCHE_DROPS=9000;                        // 1 poche de sang = 450 mL = 9000 gouttes (×50 µL)
 function pointerX(e){ const rect=cv.getBoundingClientRect();
   const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
@@ -574,7 +627,7 @@ function tapAt(x,y){
     if(inBtn(x,y,INFO_BTN)) openInfo();
     else if(inBtn(x,y,DEFI_BTN)) resetGame(true);
     else if(inBtn(x,y,BADGE_BTN)) state='BADGES';
-    else if(inBtn(x,y,BOARD_BTN)) openBoard();
+    else if(inBtn(x,y,BOARD_BTN)||inBtn(x,y,TOP3_BTN)) openBoard();
     else resetGame(false);
   }
   else if(state==='BADGES'){ state='TITLE'; }
@@ -713,7 +766,7 @@ function update(dt){
     saveProg();
     recordBeaten=!dailyMode&&score>best;
     if(recordBeaten){ best=score; try{ localStorage.setItem('bioxa_best',String(best)); }catch(e){} }
-    state='OVER'; showEntry(); }
+    state='OVER'; showRole(); }
 }
 
 // ===================== RENDU =====================
@@ -767,7 +820,7 @@ function drawBackground(t){
   // L'horizon se place dans un espace libre selon l'écran affiché, pour que la
   // ligne néon ne vienne jamais barrer un texte.
   const city=(state==='PLAY'||state==='TITLE');
-  const hz=state==='PLAY'?H*0.42:state==='TITLE'?H*0.638:H*0.30;
+  const hz=state==='PLAY'?H*0.42:state==='TITLE'?H*0.706:H*0.30;
   ctx.drawImage(baseLayer(),0,0,W,H);
   if(city) ctx.drawImage(skyStrip(),0,hz-SKY_BAND,W,SKY_BAND);
   // grille en perspective
@@ -993,6 +1046,28 @@ function neonTitle(s,x,y,sz){
   text(s,x-1.3,y,sz,'rgba(34,211,238,.7)','center',null,800,2.5);
   text(s,x,y,sz,'#ffffff','center',C.mag,800,2.5);
 }
+// ---- TOP 3 de l'accueil ----
+// Toujours le classement de TOUS LES TEMPS : le podium de l'accueil reste le même
+// repère d'une semaine à l'autre.
+const MEDAL=['#fbbf24','#dbe3f0','#e08a4c'];  // or, argent, bronze
+function drawTop3(){
+  const b=TOP3_BTN, rows=board||[];
+  fillRR(b.x,b.y,b.w,b.h,12,'rgba(8,14,34,.66)');      // même fond que la carte du dessus
+  fillRR(b.x,b.y,b.w,b.h,12,'rgba(251,191,36,.07)');   // + teinte dorée
+  strokeRR(b.x,b.y,b.w,b.h,12,'rgba(251,191,36,.32)',1);
+  text('TOP 3  ·  TOUS LES TEMPS',W/2,b.y+13,7.5,C.gold,'center',null,800,1.4);
+  if(!rows.length){
+    text('Personne au classement — sois le premier !',W/2,b.y+38,8.5,C.muted,'center',null,600,.2);
+    return;
+  }
+  rows.slice(0,3).forEach((e,i)=>{
+    const y=b.y+29+i*14, nm=String(e.name||'---');
+    text(String(i+1),b.x+14,y,9,MEDAL[i],'center',i===0?C.gold:null,800,0);
+    text(nm,b.x+26,y,10,i===0?'#ffffff':C.cream,'left',null,700,.6);
+    roleChip(b.x+26+textW(nm,10,700,.6)+5,y,e.r,10);
+    text(String(e.score),b.x+b.w-14,y,10.5,i===0?C.cyanL:C.cream,'right',null,800,0);
+  });
+}
 function renderTitle(){
   // ---- identité ----
   drawLogo(W/2,6,86);
@@ -1009,32 +1084,35 @@ function renderTitle(){
   text(dj.desc,W/2,DEFI_BTN.y+26,7.5,C.muted,'center',null,600,.2);
 
   // ---- carte "comment jouer" ----
-  fillRR(26,194,W-52,126,14,'rgba(8,14,34,.62)');
-  strokeRR(26,194,W-52,126,14,'rgba(34,211,238,.20)',1);
+  fillRR(26,192,W-52,102,14,'rgba(8,14,34,.62)');
+  strokeRR(26,192,W-52,102,14,'rgba(34,211,238,.20)',1);
   const ix=58, tx=84;
-  drawDrop (ix-9,210-10.5,3);      // à attraper
-  drawVirus(ix-12,239-12,3);       // à éviter
-  drawBonus(ix,268,'x2');          // bonus
-  drawDrop (ix-9,297-10.5,3,1);    // goutte en or
+  drawDrop (ix-9,206-10.5,3);      // à attraper
+  drawVirus(ix-12,230-12,3);       // à éviter
+  drawBonus(ix,254,'x2');          // bonus
+  drawDrop (ix-9,278-10.5,3,1);    // goutte en or
   const rows=[
-    [210,'À ATTRAPER'  ,'chaque goutte = 1 point'       ,C.cream],
-    [239,'À ÉVITER'    ,'le virus coûte une vie'        ,C.viroP],
-    [268,'BONUS'       ,'tube élargi · ×2 points · vie' ,C.cyanL],
-    [297,'GOUTTE EN OR','déclenche la pluie de gouttes' ,C.gold ],
+    [206,'À ATTRAPER'  ,'chaque goutte = 1 point'       ,C.cream],
+    [230,'À ÉVITER'    ,'le virus coûte une vie'        ,C.viroP],
+    [254,'BONUS'       ,'tube élargi · ×2 points · vie' ,C.cyanL],
+    [278,'GOUTTE EN OR','déclenche la pluie de gouttes' ,C.gold ],
   ];
   for(const rw of rows){
     text(rw[1],tx,rw[0]-5,10,rw[3],'left',null,800,1);
     text(rw[2],tx,rw[0]+8,7.5,C.muted,'left',null,600,.2);
   }
 
+  // ---- podium (toucher l'encart ouvre le classement complet) ----
+  drawTop3();
+
   // ---- appel à jouer (pulsation douce) ----
   ctx.save(); ctx.globalAlpha=.72+.28*Math.sin(performance.now()/380);
-  text('▶  TAPE POUR JOUER',W/2,348,16,'#ffffff','center',C.greenL,800,2); ctx.restore();
+  text('▶  TAPE POUR JOUER',W/2,380,16,'#ffffff','center',C.greenL,800,2); ctx.restore();
   // ---- grade de donneur + record ----
   const G=GRADES[gradeIdx()];
-  text(G.nom,W/2,366,9,G.c,'center',G.c,800,1.2);
+  text(G.nom,W/2,396,9,G.c,'center',G.c,800,1.2);
   text(best>0?('record : '+best+'  ·  '+myDrops+' gouttes au total')
-             :(myDrops+' gouttes au total'),W/2,378,7.5,C.muted,'center',null,600,.3);
+             :(myDrops+' gouttes au total'),W/2,407,7.5,C.muted,'center',null,600,.3);
 
   // ---- classement + badges ----
   for(const bt of [[BOARD_BTN,'CLASSEMENT'],[BADGE_BTN,'BADGES '+badgeCount()+'/'+BADGES.length]]){
@@ -1046,11 +1124,11 @@ function renderTitle(){
 
   // ---- sang collecté par tous les joueurs ----
   const litT=totalDrops*0.00005, pT=Math.floor(totalDrops/POCHE_DROPS);
-  fillRR(34,424,W-68,34,12,'rgba(225,29,72,.10)');
-  strokeRR(34,424,W-68,34,12,'rgba(255,77,109,.32)',1);
-  text('SANG COLLECTÉ ENSEMBLE',W/2,434,7,C.redH,'center',null,700,1.4);
+  fillRR(34,448,W-68,32,12,'rgba(225,29,72,.10)');
+  strokeRR(34,448,W-68,32,12,'rgba(255,77,109,.32)',1);
+  text('SANG COLLECTÉ ENSEMBLE',W/2,458,7,C.redH,'center',null,700,1.4);
   text(litT.toFixed(2).replace('.',',')+' L   ·   '+pT+' POCHE'+(pT>1?'S':''),
-       W/2,448,11,'#ffffff','center',C.red,800,.8);
+       W/2,471,11,'#ffffff','center',C.red,800,.8);
 
   // ---- pied de page ----
   const iy=INFO_BTN.y+INFO_BTN.h/2;
@@ -1219,6 +1297,7 @@ function renderBoard(){
     ctx.save(); ctx.globalAlpha=(e.g|0)?1:.35; ctx.fillStyle=gc;
     ctx.beginPath(); ctx.arc(46,y,3.2,0,6.283); ctx.fill(); ctx.restore();
     text(e.name,56,y,12,hot?C.greenL:C.cream,'left',null,700,1.2);
+    roleChip(56+textW(e.name,12,700,1.2)+5,y,e.r,12);
     text(String(e.score),W-30,y,13,hot?C.greenL:C.cyanL,'right',null,800,0); });
   // sang collecté + poches remplies ensemble
   const litres=totalDrops*0.00005;
@@ -1244,6 +1323,29 @@ function renderBoard(){
 
 // ============== SAISIE + LEADERBOARD ==============
 const entry=document.getElementById('entry'),nameIn=document.getElementById('nameIn'),okBtn=document.getElementById('okBtn');
+const nameErr=document.getElementById('nameErr');
+
+// ---- fenêtre « Patient(e) ou Bioxa ? », affichée avant la saisie du pseudo ----
+// Le choix ajoute un P ou un B à côté du pseudo dans le classement.
+const rolePane=document.getElementById('role');
+const ROLE_NAME={B:'Bioxa',P:'Patient(e)'};
+function showRole(){
+  entry.style.display='none';
+  document.getElementById('roleScore').textContent='Partie terminée · '+lastScore+' points';
+  // le choix de la partie précédente est simplement mis en valeur, jamais imposé
+  rolePane.querySelectorAll('.roleBtn').forEach(b=>b.classList.toggle('sel',b.dataset.role===playerRole));
+  rolePane.style.display='flex';
+}
+function chooseRole(rr){
+  playerRole=(rr==='B'||rr==='P')?rr:'';
+  try{ localStorage.setItem('bioxa_role',playerRole); }catch(e){}
+  rolePane.style.display='none';
+  showEntry();
+}
+rolePane.querySelectorAll('.roleBtn').forEach(b=>
+  b.addEventListener('click',()=>chooseRole(b.dataset.role)));
+document.getElementById('roleEdit').addEventListener('click',showRole);
+
 function showEntry(){
   document.querySelector('#entry h2').textContent=
     (recordBeaten?'🏆 Record : ':'Score : ')+lastScore+' 🩸';
@@ -1262,10 +1364,19 @@ function showEntry(){
     lastDrops+' gouttes attrapées  ·  meilleur combo x'+comboBest+
     '<br><span style="color:#22d3ee">grade : '+GRADES[gradeIdx()].nom+'</span>'+
     (newBadges.length?'<br><span style="color:#fbbf24">🏅 nouveau badge : '+newBadges.join(', ')+'</span>':'');
-  entry.style.display='flex'; nameIn.focus(); nameIn.select();
+  document.getElementById('roleWho').textContent=ROLE_NAME[playerRole]||'—';
+  // rien n'est pré-inscrit : le joueur saisit son pseudo à chaque fois
+  nameIn.value=''; nameErr.textContent='';
+  entry.style.display='flex'; nameIn.focus();
 }
 async function submitScore(){
-  lastName=(nameIn.value||'BIO').toUpperCase().slice(0,8); entry.style.display='none';
+  // même nettoyage que le serveur (accents retirés, lettres et chiffres seulement)
+  const nm=String(nameIn.value||'').toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Z0-9]/g,'').slice(0,8);
+  if(!nm){ nameErr.textContent='Saisis un pseudo pour valider.'; nameIn.focus(); return; }
+  nameErr.textContent='';
+  lastName=nm; entry.style.display='none';
   const before=totalDrops;
   const d=await lbSave(lastName,lastScore,lastDrops);
   board=d.board||[]; weekBoard=d.week||[]; dayBoard=d.day||[]; boardTab=dailyMode?'day':'week';
@@ -1305,7 +1416,8 @@ async function lbSave(name,score,drops){
   try{
     const r=await fetch('/api/leaderboard',{method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,score:score,drops:drops,daily:dailyMode,grade:gradeIdx()})});
+      body:JSON.stringify({name:name,score:score,drops:drops,daily:dailyMode,
+                           grade:gradeIdx(),role:playerRole})});
     return normalizeLB(await r.json());
   }catch(e){ return {board:[],total:0}; }
 }

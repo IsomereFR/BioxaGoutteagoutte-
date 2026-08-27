@@ -30,7 +30,6 @@ const ROLE_BY_NAME = {
   LOLO: 'B',
   WOLPHAI: 'P',
   DOFLAMIN: 'P',
-  LPB: '🎤',
 };
 const TOTAL_KEY = 'bioxa_goutte_total_v1'; // total de gouttes collectées, tous joueurs
 

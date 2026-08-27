@@ -15,7 +15,7 @@ entre tous les joueurs**.
 1. Le navigateur affiche `index.html` (le jeu).
 2. Quand un joueur termine une partie, le jeu appelle l'adresse `/api/leaderboard`.
 3. Ce petit programme (`api/leaderboard.js`) enregistre le score dans Upstash
-   et renvoie le **top 10** commun à tout le monde, ainsi que le **total de sang
+   et renvoie le **top 20** commun à tout le monde, ainsi que le **total de sang
    collecté** par l'ensemble des joueurs.
 
 ## Le jeu
@@ -45,16 +45,10 @@ Mécaniques de jeu :
 - **Goutte cristal** : très rare (environ une partie sur douze, une seule par
   partie). Elle tombe lentement, scintille, et l'attraper vaut **+50 points**
   avec un ralenti et un voile bleuté.
-- **16 badges à débloquer** (écran « Mes badges » depuis l'accueil) et un
+- **14 badges à débloquer** (écran « Mes badges » depuis l'accueil) et un
   **grade de donneur** qui monte avec le total de gouttes collectées :
   Apprenti → Donneur → Donneur régulier → Donneur héroïque → Légende Bioxa.
   Le grade apparaît en pastille colorée à côté du pseudo dans le classement.
-- **Défi du jour** : une règle spéciale, **la même pour tous**, qui change chaque
-  jour (tube fin, chute libre, une seule vie, invasion, ruée vers l'or, précision,
-  marathon). Il a son **propre classement**, remis à zéro chaque jour. Les scores du
-  défi ne se mélangent pas aux autres classements — les règles étant différentes,
-  la comparaison serait faussée. Le jour est calculé en temps universel côté jeu et
-  côté serveur, pour que tout le monde ait le même défi au même moment.
 
 > Le score peut être multiplié par les combos, mais le **sang collecté se compte
 > en gouttes réellement attrapées** — le compteur collectif reste donc exact.
@@ -79,8 +73,9 @@ L'**écran d'accueil affiche le podium** : le **Top 3 de tous les temps**, avec 
 pastille P/B de chaque joueur. Toucher l'encart ouvre le classement complet.
 
 Le classement est **consultable à tout moment** depuis le menu (bouton
-« VOIR LE CLASSEMENT »), avec deux onglets : **Cette semaine** et **Tous les
-temps** (le classement de la semaine se réinitialise tout seul chaque semaine).
+« CLASSEMENT »). Il est unique — **tous les temps** — et affiche les **20
+meilleures places**. Un joueur n'y apparaît **qu'une seule fois** : seul son
+meilleur score est retenu, même s'il a joué dix parties.
 
 L'écran du classement affiche aussi le sang total collecté par tous les joueurs
 (**1 goutte = 1 point = 50 µL**), converti en litres et en **poches de sang**
@@ -125,8 +120,8 @@ qui accompagne ce projet, ou ci-dessous en version courte.
 ## Confidentialité (RGPD)
 
 Le jeu enregistre uniquement un **pseudo** (saisi par le joueur, sans son vrai nom),
-la lettre **P** (patient·e) ou **B** (Bioxa) choisie avant la saisie, un **score** et
-la **semaine** de jeu, pour faire fonctionner le classement partagé.
+la lettre **P** (patient·e) ou **B** (Bioxa) choisie avant la saisie, et un **score**,
+pour faire fonctionner le classement partagé.
 Il n'y a **aucun cookie publicitaire**, aucun traceur, aucune donnée de santé.
 La **progression** (record, badges, grade, total de gouttes) est gardée dans le
 navigateur du joueur (stockage local) et n'est jamais envoyée au serveur — à une
@@ -134,7 +129,7 @@ exception près : le numéro du grade (0 à 4) accompagne le score pour être af
 dans le classement.
 
 - Une page **« Infos & confidentialité »** est accessible depuis l'accueil du jeu.
-- Le classement de la semaine est **effacé automatiquement** chaque semaine.
+- Le classement ne conserve que **20 lignes** : pseudo, lettre P/B, score et grade.
 - Base de classement (**Upstash**) à choisir en **région Union européenne** ;
   fonction Vercel exécutée en France (voir `vercel.json`, région `cdg1`).
 - Contact DPO affiché dans le jeu : **dpo@bioxa.fr**.

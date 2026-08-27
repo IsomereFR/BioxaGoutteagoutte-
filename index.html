@@ -334,15 +334,18 @@ function textW(s,sz,w,ls){
   try{ ctx.letterSpacing=(ls==null?sz*0.05:ls)+'px'; }catch(e){}
   const m=ctx.measureText(s).width; ctx.restore(); return m;
 }
-// Pastille « P » (patient·e) ou « B » (Bioxa) affichée à côté du pseudo.
+// Pastille affichée à côté du pseudo : « P » (patient·e), « B » (Bioxa), ou un
+// repère libre attribué par le serveur (emoji), qui s'affiche alors sans cadre.
 // x = bord gauche, y = milieu. Renvoie la place occupée (0 si pas de repère).
 function roleChip(x,y,role,sz){
-  if(role!=='B'&&role!=='P') return 0;
-  const h=sz||11, w=h, col=role==='B'?C.cyanL:C.greenL;
-  fillRR(x,y-h/2,w,h,3.5,role==='B'?'rgba(34,211,238,.16)':'rgba(190,242,100,.16)');
-  strokeRR(x,y-h/2,w,h,3.5,col,1);
-  text(role,x+w/2,y+.4,h*0.66,col,'center',null,800,0);
-  return w+4;
+  if(!role) return 0;
+  const h=sz||11;
+  if(role!=='B'&&role!=='P'){ text(role,x+h/2,y,h,C.cream,'center',null,700,0); return h+4; }
+  const col=role==='B'?C.cyanL:C.greenL;
+  fillRR(x,y-h/2,h,h,3.5,role==='B'?'rgba(34,211,238,.16)':'rgba(190,242,100,.16)');
+  strokeRR(x,y-h/2,h,h,3.5,col,1);
+  text(role,x+h/2,y+.4,h*0.66,col,'center',null,800,0);
+  return h+4;
 }
 
 // ---- sprites vectoriels (rendu réaliste / néon) ----

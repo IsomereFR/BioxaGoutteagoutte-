@@ -75,7 +75,14 @@ pastille P/B de chaque joueur. Toucher l'encart ouvre le classement complet.
 Le classement est **consultable à tout moment** depuis le menu (bouton
 « CLASSEMENT »). Il est unique — **tous les temps** — et affiche les **20
 meilleures places**. Un joueur n'y apparaît **qu'une seule fois** : seul son
-meilleur score est retenu, même s'il a joué dix parties.
+meilleur score est retenu, même s'il a joué dix parties. Un nouveau score ne
+remplace donc l'ancien **que s'il est meilleur**.
+
+Certains pseudos ont une pastille **attribuée à la main**, utile pour les scores
+enregistrés avant que la question « Patient(e) ou Bioxa ? » n'existe : la liste
+`ROLE_BY_NAME`, en haut de `api/leaderboard.js`, associe un pseudo à un repère
+(`P`, `B`, ou un emoji). Une ligne à ajouter ou retirer suffit ; ces repères ont
+priorité sur le choix fait dans le jeu.
 
 L'écran du classement affiche aussi le sang total collecté par tous les joueurs
 (**1 goutte = 1 point = 50 µL**), converti en litres et en **poches de sang**

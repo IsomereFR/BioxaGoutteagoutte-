@@ -9,8 +9,16 @@
 
 const REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
-const KEY = 'bioxa_goutte_lb_v1';          // top 20 tous les temps (JSON)
-const BOARD_MAX = 20;                      // nombre de places au classement
+const KEY = 'bioxa_goutte_lb_v1';          // classement tous les temps (JSON)
+const BOARD_MAX = 20;                      // places AFFICHÉES dans le jeu
+// Places CONSERVÉES en base. Bien plus que ce qui est affiché : sortir du top 20
+// ne doit plus effacer un score, sinon un joueur disparaît définitivement le jour
+// où vingt personnes font mieux que lui.
+const STORE_MAX = 200;
+// Clés des anciens classements hebdomadaires, à réintégrer une seule fois (voir
+// mergeLegacyWeeks plus bas).
+const WEEK_PREFIX = 'bioxa_goutte_lb_week_';
+const MERGED_FLAG = 'bioxa_goutte_lb_week_merged_v1';
 
 // Repères affichés à côté de certains pseudos, attribués à la main.
 // Ils s'appliquent aussi aux scores enregistrés AVANT la question
@@ -86,7 +94,8 @@ async function redis(command) {
 // Trie par score décroissant, ne garde que le MEILLEUR score de chaque pseudo,
 // et coupe aux 20 premières places. Les anciens classements, qui pouvaient
 // contenir plusieurs fois le même pseudo, sont donc nettoyés au passage.
-function rank(list) {
+function rank(list, max) {
+  const limit = max || BOARD_MAX;
   const best = [];
   const seen = new Set();
   for (const e of (list || []).slice().sort((a, b) => b.score - a.score)) {
@@ -94,9 +103,61 @@ function rank(list) {
     if (!name || seen.has(name)) continue;
     seen.add(name);
     best.push(e);
-    if (best.length >= BOARD_MAX) break;
+    if (best.length >= limit) break;
   }
   return best;
+}
+
+// Numéro de semaine ISO (ex. "2026_35") : sert uniquement à retrouver les clés
+// des anciens classements hebdomadaires, quand la commande KEYS n'est pas
+// disponible.
+function isoWeekId(d) {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNum = (date.getUTCDay() + 6) % 7;            // lundi = 0
+  date.setUTCDate(date.getUTCDate() - dayNum + 3);      // jeudi de la semaine
+  const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+  const week = 1 + Math.round(
+    ((date - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7
+  );
+  return date.getUTCFullYear() + '_' + String(week).padStart(2, '0');
+}
+function recentWeekKeys(n) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const d = new Date(Date.now() - i * 7 * 86400000);
+    out.push(WEEK_PREFIX + isoWeekId(d));
+  }
+  return out;
+}
+
+// RÉCUPÉRATION DES SCORES DES ANCIENS CLASSEMENTS HEBDOMADAIRES.
+// Avant la refonte, chaque partie était écrite dans DEUX listes : « tous les
+// temps » (limitée à 10 places) et « cette semaine ». Un score modeste sortait
+// donc du top 10 tout en restant visible dans l'onglet Semaine — et en retirant
+// cet onglet, ces joueurs ont disparu de l'affichage. Leurs scores sont toujours
+// dans la base tant que la clé de leur semaine n'a pas expiré : on les remet
+// dans le classement principal, une seule fois (MERGED_FLAG).
+async function mergeLegacyWeeks() {
+  if (await redis(['GET', MERGED_FLAG])) return;
+  let keys;
+  try {
+    keys = await redis(['KEYS', WEEK_PREFIX + '*']);   // toutes les semaines encore là
+  } catch (e) {
+    keys = null;
+  }
+  if (!Array.isArray(keys) || !keys.length) keys = recentWeekKeys(8); // repli
+  const extra = [];
+  for (const k of keys) {
+    if (k === MERGED_FLAG) continue;
+    try {
+      const raw = await redis(['GET', k]);
+      if (raw) extra.push.apply(extra, JSON.parse(raw));
+    } catch (e) { /* une clé illisible ne doit pas bloquer les autres */ }
+  }
+  const raw = await redis(['GET', KEY]);
+  const merged = rank((raw ? JSON.parse(raw) : []).concat(extra), STORE_MAX);
+  await redis(['SET', KEY, JSON.stringify(merged)]);
+  await redis(['SET', MERGED_FLAG, String(extra.length)]);
 }
 
 // Applique ROLE_BY_NAME juste avant l'envoi : ce qui est stocké dans la base
@@ -108,10 +169,10 @@ function withRoles(list) {
   });
 }
 
-// Ajoute une entrée au classement et renvoie le nouveau top 20.
+// Ajoute une entrée au classement et renvoie la liste conservée.
 async function pushBoard(key, entry) {
   const raw = await redis(['GET', key]);
-  const list = rank((raw ? JSON.parse(raw) : []).concat([entry]));
+  const list = rank((raw ? JSON.parse(raw) : []).concat([entry]), STORE_MAX);
   await redis(['SET', key, JSON.stringify(list)]);
   return list;
 }
@@ -125,13 +186,17 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Réintégration des anciens classements hebdomadaires : ne s'exécute qu'une
+    // fois, et un échec ne doit jamais empêcher le classement de s'afficher.
+    try { await mergeLegacyWeeks(); } catch (e) { /* réessayé au prochain appel */ }
+
     // GET : lire le classement + le total de sang collecté
     if (req.method === 'GET') {
       const rawList = await redis(['GET', KEY]);
       const rawTotal = await redis(['GET', TOTAL_KEY]);
       res.status(200).json({
         // rank() ici aussi : l'affichage est propre même avant la prochaine écriture
-        board: withRoles(rank(rawList ? JSON.parse(rawList) : [])),
+        board: withRoles(rank(rawList ? JSON.parse(rawList) : [], BOARD_MAX)),
         total: SEED_DROPS + (parseInt(rawTotal, 10) || 0),
       });
       return;
@@ -167,7 +232,7 @@ module.exports = async (req, res) => {
       const total = await redis(['INCRBY', TOTAL_KEY, drops]);
 
       res.status(200).json({
-        board: withRoles(list),
+        board: withRoles(list.slice(0, BOARD_MAX)),
         total: SEED_DROPS + (parseInt(total, 10) || 0),
       });
       return;

@@ -78,6 +78,16 @@ meilleures places**. Un joueur n'y apparaît **qu'une seule fois** : seul son
 meilleur score est retenu, même s'il a joué dix parties. Un nouveau score ne
 remplace donc l'ancien **que s'il est meilleur**.
 
+La base en conserve bien plus que ce qui est affiché — **200 joueurs**
+(`STORE_MAX` dans `api/leaderboard.js`) — pour que sortir du top 20 n'efface
+jamais un score. Au premier appel après la mise à jour, l'API **récupère aussi
+les scores des anciens classements hebdomadaires** encore présents dans la base :
+avant la refonte, un score modeste sortait du top 10 « tous les temps » tout en
+restant visible dans l'onglet « Cette semaine », et ces joueurs auraient disparu
+de l'affichage. L'opération n'a lieu qu'une fois (clé `..._week_merged_v1`).
+Les scores du **défi du jour**, obtenus avec des règles différentes, ne sont pas
+réintégrés.
+
 Certains pseudos ont une pastille **attribuée à la main**, utile pour les scores
 enregistrés avant que la question « Patient(e) ou Bioxa ? » n'existe : la liste
 `ROLE_BY_NAME`, en haut de `api/leaderboard.js`, associe un pseudo à un repère
